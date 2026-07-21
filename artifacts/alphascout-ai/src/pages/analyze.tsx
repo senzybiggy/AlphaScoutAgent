@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { TerminalSquare, AlertCircle } from "lucide-react";
 import { useAnalyzeTarget, type AnalyzeResult } from "@workspace/api-client-react";
+import { useAppKitAccount, useAppKitNetwork } from "@reown/appkit/react";
 import { SmartInput } from "@/components/analyze/smart-input";
 import { AnalysisResults } from "@/components/analyze/analysis-results";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -10,6 +11,13 @@ import { DetectionResult } from "@/lib/detect-input-type";
 export function Analyze() {
   const analyzeTarget = useAnalyzeTarget();
   const [lastResult, setLastResult] = useState<AnalyzeResult | null>(null);
+
+  // Wallet connection state — used to drive the connected-wallet mode in SmartInput
+  const { address, isConnected } = useAppKitAccount();
+  const { caipNetwork } = useAppKitNetwork();
+
+  const connectedAddress = isConnected && address ? address : undefined;
+  const connectedNetwork = caipNetwork?.name ?? undefined;
 
   const handleSubmit = (value: string, detection: DetectionResult) => {
     const type =
@@ -45,14 +53,20 @@ export function Analyze() {
           ANALYSIS TERMINAL
         </h1>
         <p className="text-muted-foreground">
-          Paste any wallet address, token contract, smart contract, or project URL.
-          AlphaScout auto-detects the target type and runs a deep-scan intelligence report.
+          Connect your wallet for one-click scanning, or paste any wallet address, token
+          contract, smart contract, or project URL directly. AlphaScout auto-detects the
+          target type and runs a deep-scan intelligence report.
         </p>
       </div>
 
-      {/* Single smart input */}
+      {/* Smart input — now wallet-aware */}
       <div className="mb-10">
-        <SmartInput onSubmit={handleSubmit} isLoading={analyzeTarget.isPending} />
+        <SmartInput
+          onSubmit={handleSubmit}
+          isLoading={analyzeTarget.isPending}
+          connectedAddress={connectedAddress}
+          connectedNetwork={connectedNetwork}
+        />
       </div>
 
       {/* Results area */}
@@ -90,9 +104,11 @@ export function Analyze() {
         )}
 
         {!analyzeTarget.isPending && !lastResult && !analyzeTarget.isError && (
-          <div className="h-full flex flex-col items-center justify-center text-muted-foreground/50 border border-dashed border-border/30 rounded-xl p-12 bg-background/50">
-            <TerminalSquare className="w-12 h-12 mb-4 opacity-20" />
-            <p className="font-mono text-sm tracking-widest uppercase">AWAITING TARGET INPUT</p>
+          <div className="flex flex-col items-center justify-center min-h-[300px] text-center space-y-4 opacity-40">
+            <TerminalSquare className="h-12 w-12 text-primary" />
+            <p className="font-mono text-sm text-muted-foreground">
+              AWAITING TARGET · ENTER ADDRESS OR CONNECT WALLET TO BEGIN
+            </p>
           </div>
         )}
       </div>
