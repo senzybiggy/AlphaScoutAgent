@@ -56,8 +56,26 @@ export default defineConfig({
         '..',
         'attached_assets',
       ),
+      // Force all wallet/wagmi packages to the same React instance
+      'react': path.resolve(import.meta.dirname, 'node_modules/react'),
+      'react-dom': path.resolve(import.meta.dirname, 'node_modules/react-dom'),
     },
-    dedupe: ['react', 'react-dom'],
+    dedupe: [
+      'react',
+      'react-dom',
+      'react/jsx-runtime',
+      '@tanstack/react-query',
+      'wagmi',
+      '@wagmi/core',
+      'viem',
+    ],
+  },
+  optimizeDeps: {
+    include: [
+      'wagmi',
+      'viem',
+      '@tanstack/react-query',
+    ],
   },
   root: path.resolve(import.meta.dirname),
   build: {

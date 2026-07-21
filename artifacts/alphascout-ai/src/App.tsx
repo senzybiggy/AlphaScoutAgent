@@ -1,18 +1,22 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Toaster } from '@/components/ui/toaster';
-import { TooltipProvider } from '@/components/ui/tooltip';
-import NotFound from '@/pages/not-found';
-import { Route, Switch, Router as WouterRouter } from 'wouter';
-import { useEffect } from 'react';
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { Toaster } from "@/components/ui/toaster";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import NotFound from "@/pages/not-found";
+import { Route, Switch, Router as WouterRouter } from "wouter";
+import { useEffect } from "react";
+import { WagmiProvider } from "wagmi";
 
 // Pages
-import { Home } from './pages/home';
-import { Analyze } from './pages/analyze';
-import { Chat } from './pages/chat';
-import { Agents } from './pages/agents';
+import { Home } from "./pages/home";
+import { Analyze } from "./pages/analyze";
+import { Chat } from "./pages/chat";
+import { Agents } from "./pages/agents";
 
 // Components
-import { Navbar } from './components/layout/navbar';
+import { Navbar } from "./components/layout/navbar";
+
+// Wallet — imports wallet-config as a side effect, which calls createAppKit()
+import { wagmiAdapter } from "./lib/wallet-config";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -42,18 +46,21 @@ function Router() {
 
 function App() {
   useEffect(() => {
-    document.documentElement.classList.add('dark');
+    document.documentElement.classList.add("dark");
   }, []);
 
+  // Reown-recommended hierarchy: WagmiProvider → QueryClientProvider → rest of app
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
-          <Router />
-        </WouterRouter>
-        <Toaster />
-      </TooltipProvider>
-    </QueryClientProvider>
+    <WagmiProvider config={wagmiAdapter.wagmiConfig}>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+            <Router />
+          </WouterRouter>
+          <Toaster />
+        </TooltipProvider>
+      </QueryClientProvider>
+    </WagmiProvider>
   );
 }
 
