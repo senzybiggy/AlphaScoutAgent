@@ -1,0 +1,27 @@
+kind = "web"
+previewPath = "/"
+title = "AlphaScout AI"
+version = "1.0.0"
+id = "artifacts/alphascout-ai"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 20005
+
+[services.development]
+run = "pnpm --filter @workspace/alphascout-ai run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/alphascout-ai", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/alphascout-ai/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "20005"
+BASE_PATH = "/"
