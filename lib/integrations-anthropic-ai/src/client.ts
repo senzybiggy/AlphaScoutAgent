@@ -32,8 +32,8 @@ export const anthropic = new Anthropic({ apiKey });
 /**
  * Canonical model IDs per provider.
  * - Anthropic native: claude-sonnet-4-6
- * - OpenRouter:       anthropic/claude-3-5-sonnet  (widely available, stable)
+ * - OpenRouter:       nvidia/nemotron-3-super-120b-a12b:free (no-cost tier, 120B)
  */
 export const CLAUDE_MODEL = IS_OPENROUTER
-  ? "anthropic/claude-sonnet-4.6"
+  ? "nvidia/nemotron-3-super-120b-a12b:free"
   : "claude-sonnet-4-6";
