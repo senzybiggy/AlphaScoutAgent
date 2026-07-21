@@ -1,10 +1,13 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { conversations, messages, insertConversationSchema } from "@workspace/db";
-import { anthropic } from "@workspace/integrations-anthropic-ai";
+import { streamAI } from "@workspace/integrations-anthropic-ai";
 import { eq } from "drizzle-orm";
 
 const router = Router();
+
+const SYSTEM_PROMPT =
+  "You are AlphaScout AI, an expert blockchain and crypto intelligence agent. You help users analyze wallets, tokens, smart contracts, and projects. You provide sharp, data-driven insights about on-chain activity, risk profiles, market dynamics, and project fundamentals. Be concise, professional, and insightful.";
 
 // GET /api/anthropic/conversations
 router.get("/", async (req, res) => {
@@ -92,14 +95,12 @@ router.post("/:id/messages", async (req, res) => {
     return;
   }
 
-  // Save user message
   await db.insert(messages).values({
     conversationId: id,
     role: "user",
     content: content.trim(),
   });
 
-  // Fetch all messages for context
   const history = await db
     .select()
     .from(messages)
@@ -111,37 +112,28 @@ router.post("/:id/messages", async (req, res) => {
     content: m.content,
   }));
 
-  // SSE headers
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");
   res.setHeader("Connection", "keep-alive");
 
   let fullResponse = "";
 
-  const stream = anthropic.messages.stream({
-    model: "claude-sonnet-4-6",
-    max_tokens: 8192,
-    system:
-      "You are AlphaScout AI, an expert blockchain and crypto intelligence agent. You help users analyze wallets, tokens, smart contracts, and projects. You provide sharp, data-driven insights about on-chain activity, risk profiles, market dynamics, and project fundamentals. Be concise, professional, and insightful.",
-    messages: chatMessages,
-  });
-
-  for await (const event of stream) {
-    if (
-      event.type === "content_block_delta" &&
-      event.delta.type === "text_delta"
-    ) {
-      fullResponse += event.delta.text;
-      res.write(`data: ${JSON.stringify({ content: event.delta.text })}\n\n`);
+  try {
+    for await (const delta of streamAI({ system: SYSTEM_PROMPT, messages: chatMessages })) {
+      fullResponse += delta;
+      res.write(`data: ${JSON.stringify({ content: delta })}\n\n`);
     }
-  }
 
-  // Save assistant message
-  await db.insert(messages).values({
-    conversationId: id,
-    role: "assistant",
-    content: fullResponse,
-  });
+    await db.insert(messages).values({
+      conversationId: id,
+      role: "assistant",
+      content: fullResponse,
+    });
+  } catch (err) {
+    req.log.error({ err }, "Stream error in conversations route");
+    // Best-effort: signal the client something went wrong mid-stream
+    res.write(`data: ${JSON.stringify({ error: "Stream interrupted" })}\n\n`);
+  }
 
   res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
   res.end();

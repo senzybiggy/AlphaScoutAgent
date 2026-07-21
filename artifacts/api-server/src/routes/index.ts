@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import healthRouter from "./health";
 import anthropicRouter from "./anthropic/conversations";
-import analyzeRouter from "./analyze";
+import analyzeRouter from "./analyze/index.js";
 import agentsRouter from "./agents";
 
 const router: IRouter = Router();
