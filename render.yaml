@@ -1,0 +1,49 @@
+# Render deployment configuration for AlphaScout AI API Server
+# https://render.com/docs/render-yaml-spec
+#
+# Deploy from monorepo root — Render will use this file to configure the service.
+
+services:
+  - type: web
+    name: alphascout-ai-api
+    runtime: node
+    region: oregon         # Change to frankfurt / singapore if needed
+    plan: free             # Upgrade to starter+ for production SLA
+    rootDir: .             # Monorepo root — pnpm workspace
+    buildCommand: >
+      npm install -g pnpm@10 &&
+      pnpm install --frozen-lockfile &&
+      pnpm --filter @workspace/api-server run build
+    startCommand: pnpm --filter @workspace/api-server run start
+    healthCheckPath: /api/healthz
+    autoDeploy: true
+    envVars:
+      # Required — Render sets PORT automatically
+      - key: PORT
+        value: 10000
+      # Required — PostgreSQL connection string
+      # Create a Render Postgres instance and link it, or paste the URL here
+      - key: DATABASE_URL
+        sync: false        # Fill in Render dashboard → Environment
+      # Required — AI provider key (OpenRouter or Anthropic)
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      # Optional — Set to your deployed URL for correct manifest/card URLs
+      - key: PUBLIC_URL
+        sync: false        # e.g. https://alphascout-ai-api.onrender.com
+      # Optional — Moralis API key for full EVM wallet data
+      - key: MORALIS_API_KEY
+        sync: false
+      # Optional — comma-separated API keys to enforce auth
+      # Leave blank for open/evaluation mode
+      - key: API_KEYS
+        sync: false
+      # Optional — override rate limit defaults
+      - key: RATE_LIMIT_GLOBAL
+        value: "200"
+      - key: RATE_LIMIT_ANALYSIS
+        value: "10"
+      - key: RATE_LIMIT_AGENT
+        value: "15"
+      - key: NODE_ENV
+        value: production
