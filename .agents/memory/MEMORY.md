@@ -1,0 +1,1 @@
+- [AlphaScout AI Stack](alphascout-stack.md) — core stack decisions, OpenRouter key prefix, wallet connect config, data layer architecture.

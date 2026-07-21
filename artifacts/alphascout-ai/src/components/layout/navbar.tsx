@@ -5,6 +5,7 @@ import {
   TerminalSquare,
   Search,
   MessageSquare,
+  Clock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ConnectWalletButton, WalletStatusPill } from "@/components/wallet/connect-button";
@@ -15,6 +16,7 @@ export function Navbar() {
   const navItems = [
     { name: "Terminal", path: "/", icon: TerminalSquare },
     { name: "Analyze", path: "/analyze", icon: Search },
+    { name: "History", path: "/history", icon: Clock },
     { name: "Agents", path: "/agents", icon: Cpu },
     { name: "Comm Link", path: "/chat", icon: MessageSquare },
   ];

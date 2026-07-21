@@ -11,6 +11,7 @@ import { Home } from "./pages/home";
 import { Analyze } from "./pages/analyze";
 import { Chat } from "./pages/chat";
 import { Agents } from "./pages/agents";
+import { History } from "./pages/history";
 
 // Components
 import { Navbar } from "./components/layout/navbar";
@@ -37,6 +38,7 @@ function Router() {
           <Route path="/analyze" component={Analyze} />
           <Route path="/chat" component={Chat} />
           <Route path="/agents" component={Agents} />
+          <Route path="/history" component={History} />
           <Route component={NotFound} />
         </Switch>
       </main>

@@ -1,0 +1,257 @@
+Upgrade AlphaScout AI into a production-ready AI on-chain intelligence platform for the OKX AI Genesis Hackathon.
+
+DO NOT redesign the UI.
+Keep the current theme, branding, navigation, and layout.
+Enhance functionality only.
+
+==========================
+WALLET ANALYSIS
+==========================
+
+Support both:
+
+• Connect Wallet
+• Manual Wallet Address
+
+After connecting, automatically detect the address.
+
+Allow users to switch between:
+- Connected Wallet
+- Manual Address
+
+Never require wallet connection.
+
+==========================
+LIVE BLOCKCHAIN DATA
+==========================
+
+Fetch live data before AI analysis.
+
+Display:
+
+• Portfolio Value
+• Token Balances
+• NFTs
+• Recent Transactions
+• Wallet Age
+• Gas Usage
+• Active Chains
+• DeFi Positions
+• Top Holdings
+• Top Counterparties
+• Smart Contract Interactions
+• Smart Money Activity
+• Whale Detection
+• Wallet Labels
+• Risk Score
+• Wallet Health Score
+• AI Summary
+• AI Recommendations
+
+==========================
+TOKEN ANALYSIS
+==========================
+
+When a token is entered:
+
+Show:
+
+• Token Overview
+• Price
+• Market Cap
+• Liquidity
+• Volume
+• FDV
+• Holder Distribution
+• Top Holders
+• Whale Concentration
+• Contract Verification
+• Honeypot Detection
+• Rug Risk
+• Buy/Sell Tax
+• Token Utility
+• Ecosystem
+• AI Summary
+
+==========================
+SMART CONTRACT ANALYSIS
+==========================
+
+When a contract is entered:
+
+Analyze:
+
+• Verification Status
+• Security Risks
+• Ownership
+• Upgradeability
+• Permissions
+• Dangerous Functions
+• Known Vulnerabilities
+• AI Security Report
+
+==========================
+PROJECT ANALYSIS
+==========================
+
+When a website is entered:
+
+Analyze:
+
+• Project Overview
+• Team
+• Ecosystem
+• Token Utility
+• Roadmap
+• Community
+• Social Presence
+• Documentation
+• AI Summary
+
+==========================
+INTERACTIVE AI CHAT
+==========================
+
+After every scan,
+
+enable an AI Copilot.
+
+Users can ask:
+
+"Summarize this wallet."
+
+"Why is this risky?"
+
+"What should I monitor?"
+
+"Explain these transactions."
+
+"Is this token safe?"
+
+The AI must answer using the current scan as context.
+
+==========================
+VISUAL DASHBOARDS
+==========================
+
+Replace plain text with interactive components:
+
+• Portfolio Pie Chart
+• Token Allocation
+• Risk Gauge
+• Transaction Timeline
+• Holdings Table
+• Security Score Cards
+• Smart Money Indicators
+• Wallet Health Meter
+
+==========================
+EXPORT
+==========================
+
+Allow users to:
+
+• Copy Report
+• Download PDF
+• Export JSON
+• Export Markdown
+• Share Report
+
+==========================
+COMPARE MODE
+==========================
+
+Allow comparing:
+
+Wallet vs Wallet
+
+Token vs Token
+
+Display:
+
+• Portfolio Comparison
+• Risk Comparison
+• Common Holdings
+• Common Transactions
+• Performance
+• AI Verdict
+
+==========================
+WATCHLIST
+==========================
+
+Allow users to:
+
+Save wallets
+
+Save tokens
+
+Save contracts
+
+Display:
+
+• Last Scan
+• Risk Changes
+• Portfolio Changes
+
+==========================
+REAL-TIME ALERTS
+==========================
+
+Detect:
+
+Large Transfers
+
+Whale Movement
+
+Suspicious Activity
+
+High Risk Contracts
+
+New Token Purchases
+
+Display alert badges.
+
+==========================
+ANALYSIS HISTORY
+==========================
+
+Store previous scans.
+
+Allow reopening old reports.
+
+==========================
+AI IMPROVEMENTS
+==========================
+
+The AI must never hallucinate.
+
+Use fetched blockchain data as context.
+
+If data is unavailable,
+
+say "Data unavailable."
+
+Never invent values.
+
+==========================
+PERFORMANCE
+==========================
+
+Optimize loading.
+
+Add skeleton loaders.
+
+Error handling.
+
+Retry failed requests.
+
+Cache API results.
+
+==========================
+FINAL REQUIREMENT
+==========================
+
+The application should feel like a premium on-chain intelligence platform comparable to Nansen, Arkham, Bubblemaps, and DeBank, while keeping the current AlphaScout AI branding and UI.
+
+Do not remove any existing functionality.
