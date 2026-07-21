@@ -1,0 +1,239 @@
+{
+  "_comment": "OKX AI Agent Service Provider registration manifest for AlphaScout AI. Submit this file to the OKX AI Marketplace. Replace DEPLOYMENT_URL with the live deployment URL before submission.",
+  "manifestVersion": "1.0",
+  "id": "alphascout-ai",
+  "name": "AlphaScout AI",
+  "tagline": "The ultimate intelligence edge for blockchain operators",
+  "description": "AlphaScout AI is an AI Agent Service Provider delivering deep blockchain intelligence through a modular multi-agent architecture. It provides AI-powered analysis of wallets, token contracts, smart contracts, projects, early alpha signals, and OKX-native ecosystem opportunities. Built for the OKX AI Genesis Hackathon.",
+  "version": "1.0.0",
+  "category": "blockchain-intelligence",
+  "tags": [
+    "blockchain",
+    "defi",
+    "crypto-intelligence",
+    "smart-contract-audit",
+    "wallet-analysis",
+    "alpha-discovery",
+    "okx-ecosystem",
+    "security"
+  ],
+  "author": {
+    "name": "AlphaScout AI",
+    "url": "https://DEPLOYMENT_URL"
+  },
+  "license": "proprietary",
+  "authentication": {
+    "type": "none",
+    "note": "No authentication required for hackathon evaluation."
+  },
+  "apiBase": "https://DEPLOYMENT_URL/api/agent",
+  "endpoints": {
+    "health":   "GET  /health",
+    "manifest": "GET  /manifest",
+    "agents":   "GET  /agents",
+    "agent":    "GET  /agents/:id",
+    "run":      "POST /run"
+  },
+  "rateLimit": {
+    "requestsPerMinute": 10,
+    "requestsPerDay": 500
+  },
+  "supportedChains": [
+    "ethereum",
+    "solana",
+    "bitcoin",
+    "base",
+    "arbitrum",
+    "okx-xlayer"
+  ],
+  "agents": [
+    {
+      "id": "wallet-scout",
+      "name": "WalletScout",
+      "description": "Deep wallet profiling — tracks transaction history, behavioural patterns, whale movements, and risk exposure across chains.",
+      "category": "analysis",
+      "status": "active",
+      "version": "1.0.0",
+      "skills": [
+        {
+          "id": "analyze",
+          "name": "Wallet Analysis",
+          "description": "Full intelligence report on a wallet address: activity patterns, risk score, portfolio metrics, and AI insights.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "target": { "type": "string", "description": "Wallet address (EVM, Solana, or Bitcoin)" },
+              "chain": { "type": "string", "description": "Blockchain network", "enum": ["ethereum", "solana", "bitcoin", "base", "arbitrum", "okx-xlayer"] }
+            },
+            "required": ["target"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "token-sentinel",
+      "name": "TokenSentinel",
+      "description": "Real-time token intelligence — monitors liquidity, holder concentration, rugpull signals, and market momentum.",
+      "category": "analysis",
+      "status": "active",
+      "version": "1.0.0",
+      "skills": [
+        {
+          "id": "analyze",
+          "name": "Token Analysis",
+          "description": "Full token intelligence report: market metrics, holder distribution, liquidity, and risk score.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "target": { "type": "string", "description": "Token contract address" },
+              "chain": { "type": "string", "description": "Blockchain network", "enum": ["ethereum", "solana", "base", "arbitrum", "okx-xlayer"] }
+            },
+            "required": ["target"]
+          }
+        },
+        {
+          "id": "honeypot-check",
+          "name": "Honeypot Check",
+          "description": "Focused honeypot and exit-liquidity scan for a token contract.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "target": { "type": "string", "description": "Token contract address" },
+              "chain": { "type": "string", "description": "Blockchain network" }
+            },
+            "required": ["target"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "contract-auditor",
+      "name": "ContractAuditor",
+      "description": "Automated smart contract security scanning — identifies vulnerabilities, backdoors, and malicious patterns.",
+      "category": "security",
+      "status": "active",
+      "version": "1.0.0",
+      "skills": [
+        {
+          "id": "analyze",
+          "name": "Security Audit",
+          "description": "Full smart contract security assessment: proxy pattern, ownership, vulnerabilities, and risk score.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "target": { "type": "string", "description": "Smart contract address" },
+              "chain": { "type": "string", "description": "Blockchain network", "enum": ["ethereum", "base", "arbitrum", "okx-xlayer"] }
+            },
+            "required": ["target"]
+          }
+        },
+        {
+          "id": "vulnerability-scan",
+          "name": "Vulnerability Scan",
+          "description": "Focused scan for the top smart contract vulnerability patterns.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "target": { "type": "string", "description": "Smart contract address" },
+              "chain": { "type": "string", "description": "Blockchain network" }
+            },
+            "required": ["target"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "alpha-hunter",
+      "name": "AlphaHunter",
+      "description": "Surfaces early alpha signals by monitoring on-chain activity, insider wallets, and emerging narrative trends.",
+      "category": "research",
+      "status": "active",
+      "version": "1.0.0",
+      "skills": [
+        {
+          "id": "analyze",
+          "name": "Alpha Discovery",
+          "description": "Discover on-chain alpha signals for a token, wallet, or project target.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "target": { "type": "string", "description": "Token address, wallet address, or project name" },
+              "chain": { "type": "string", "description": "Blockchain network" }
+            },
+            "required": ["target"]
+          }
+        },
+        {
+          "id": "smart-money-check",
+          "name": "Smart Money Check",
+          "description": "Classify whether a wallet exhibits smart-money characteristics.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "target": { "type": "string", "description": "Wallet address to classify" },
+              "chain": { "type": "string", "description": "Blockchain network" }
+            },
+            "required": ["target"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "project-analyst",
+      "name": "ProjectAnalyst",
+      "description": "Full-spectrum project due diligence — evaluates team credibility, tokenomics, roadmap execution, and community health.",
+      "category": "research",
+      "status": "active",
+      "version": "1.0.0",
+      "skills": [
+        {
+          "id": "analyze",
+          "name": "Project Due Diligence",
+          "description": "Comprehensive due diligence report on a crypto project.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "target": { "type": "string", "description": "Project name, URL, or token symbol" }
+            },
+            "required": ["target"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "okx-chain-scout",
+      "name": "OKX ChainScout",
+      "description": "Specialised intelligence for the OKX ecosystem — monitors OKX X Layer activity, OKX DEX flows, and OKX-native opportunities.",
+      "category": "analysis",
+      "status": "beta",
+      "version": "1.0.0",
+      "skills": [
+        {
+          "id": "analyze",
+          "name": "OKX Ecosystem Analysis",
+          "description": "Full OKX ecosystem intelligence: X Layer activity, DEX flows, OKB correlation, and bridge patterns.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "target": { "type": "string", "description": "Wallet address, token address, or project name" },
+              "chain": { "type": "string", "description": "Source chain context", "enum": ["okx-xlayer", "ethereum", "solana", "arbitrum"] }
+            },
+            "required": ["target"]
+          }
+        },
+        {
+          "id": "bridge-flow",
+          "name": "Bridge Flow Analysis",
+          "description": "Analyse cross-chain bridge flows between OKX X Layer and other networks.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "target": { "type": "string", "description": "Wallet or token address" }
+            },
+            "required": ["target"]
+          }
+        }
+      ]
+    }
+  ]
+}

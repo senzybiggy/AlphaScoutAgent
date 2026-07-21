@@ -3,25 +3,27 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: AlphaScout AI API specification
+  description: AlphaScout AI — OKX AI Agent Service Provider API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
-    description: Health operations
+    description: Health and liveness
+  - name: agent
+    description: OKX AI Agent Service Provider endpoints
   - name: anthropic
     description: Anthropic AI chat operations
   - name: analyze
-    description: Blockchain analysis operations
+    description: Legacy blockchain analysis endpoint (use /agent/run instead)
   - name: agents
-    description: AI agent registry
+    description: Legacy agent registry (use /agent/agents instead)
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
-      summary: Health check
+      summary: Basic health check
       description: Returns server health status
       responses:
         "200":
@@ -30,6 +32,115 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  # ── OKX AI Agent Service Provider ──────────────────────────────────────────
+
+  /agent/health:
+    get:
+      operationId: agentHealth
+      tags: [agent]
+      summary: Enhanced agent service health
+      description: Returns detailed health including uptime, version, model, and agent counts
+      responses:
+        "200":
+          description: Agent service health
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentHealth"
+
+  /agent/manifest:
+    get:
+      operationId: agentManifest
+      tags: [agent]
+      summary: OKX registration manifest
+      description: >
+        Returns the full OKX AI Agent Service Provider manifest, including all registered agents,
+        their skills, supported chains, and endpoint URLs. Submit this to the OKX AI Marketplace.
+      responses:
+        "200":
+          description: Agent service manifest
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentManifest"
+
+  /agent/agents:
+    get:
+      operationId: listAgentService
+      tags: [agent]
+      summary: List all agents with skills
+      description: Returns the full agent directory including skill schemas
+      responses:
+        "200":
+          description: Array of agent definitions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AgentServiceDefinition"
+
+  /agent/agents/{id}:
+    get:
+      operationId: getAgentById
+      tags: [agent]
+      summary: Get a single agent by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Agent definition
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentServiceDefinition"
+        "404":
+          description: Agent not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnthropicError"
+
+  /agent/run:
+    post:
+      operationId: runAgent
+      tags: [agent]
+      summary: Execute an agent skill
+      description: >
+        Unified execution endpoint for all AlphaScout AI agents.
+        Provide agentId, skill, and parameters. Returns a structured AgentResponse.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AgentRequest"
+      responses:
+        "200":
+          description: Successful agent execution
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentResponse"
+        "400":
+          description: Invalid agent, skill, or parameters
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentResponse"
+        "500":
+          description: Agent execution error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentResponse"
+
+  # ── Anthropic chat ──────────────────────────────────────────────────────────
 
   /anthropic/conversations:
     get:
@@ -149,11 +260,13 @@ paths:
           content:
             text/event-stream: {}
 
+  # ── Legacy ──────────────────────────────────────────────────────────────────
+
   /analyze:
     post:
       operationId: analyzeTarget
       tags: [analyze]
-      summary: Analyze a wallet, token, contract, or project
+      summary: Analyze a wallet, token, contract, or project (legacy — prefer /agent/run)
       requestBody:
         required: true
         content:
@@ -178,7 +291,7 @@ paths:
     get:
       operationId: listAgents
       tags: [agents]
-      summary: List all available AI agents
+      summary: List all available AI agents (legacy — prefer /agent/agents)
       responses:
         "200":
           description: List of agents
@@ -196,8 +309,168 @@ components:
       properties:
         status:
           type: string
-      required:
-        - status
+      required: [status]
+
+    AgentHealth:
+      type: object
+      properties:
+        status:
+          type: string
+        service:
+          type: string
+        version:
+          type: string
+        model:
+          type: string
+        uptimeSeconds:
+          type: integer
+        agents:
+          type: object
+          properties:
+            total:
+              type: integer
+            active:
+              type: integer
+            beta:
+              type: integer
+          required: [total, active, beta]
+        timestamp:
+          type: string
+          format: date-time
+      required: [status, service, version, model, uptimeSeconds, agents, timestamp]
+
+    AgentSkillParam:
+      type: object
+      properties:
+        type:
+          type: string
+        description:
+          type: string
+        enum:
+          type: array
+          items:
+            type: string
+      required: [type, description]
+
+    AgentSkillParameters:
+      type: object
+      properties:
+        type:
+          type: string
+        properties:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/AgentSkillParam"
+        required:
+          type: array
+          items:
+            type: string
+      required: [type, properties, required]
+
+    AgentSkill:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        parameters:
+          $ref: "#/components/schemas/AgentSkillParameters"
+      required: [id, name, description, parameters]
+
+    AgentServiceDefinition:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        category:
+          type: string
+          enum: [analysis, trading, monitoring, research, security]
+        status:
+          type: string
+          enum: [active, beta, coming_soon]
+        version:
+          type: string
+        skills:
+          type: array
+          items:
+            $ref: "#/components/schemas/AgentSkill"
+      required: [id, name, description, category, status, version, skills]
+
+    AgentManifest:
+      type: object
+      properties:
+        manifestVersion:
+          type: string
+        id:
+          type: string
+        name:
+          type: string
+        tagline:
+          type: string
+        description:
+          type: string
+        version:
+          type: string
+        category:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        agents:
+          type: array
+          items:
+            $ref: "#/components/schemas/AgentServiceDefinition"
+      required: [manifestVersion, id, name, description, version, category, agents]
+
+    AgentRequest:
+      type: object
+      properties:
+        agentId:
+          type: string
+          description: ID of the agent to invoke (e.g. "wallet-scout")
+        skill:
+          type: string
+          description: Skill to execute (e.g. "analyze")
+        parameters:
+          type: object
+          description: Skill-specific parameters (see /agent/agents/:id for schema)
+          additionalProperties: true
+        requestId:
+          type: string
+          description: Optional caller-supplied request ID for idempotency / tracing
+      required: [agentId, skill]
+
+    AgentResponse:
+      type: object
+      properties:
+        requestId:
+          type: string
+        agentId:
+          type: string
+        skill:
+          type: string
+        status:
+          type: string
+          enum: [success, error]
+        result:
+          description: Present on success — shape varies by agent and skill
+        error:
+          type: string
+          description: Present on error
+        executedAt:
+          type: string
+          format: date-time
+        latencyMs:
+          type: integer
+      required: [requestId, agentId, skill, status, executedAt, latencyMs]
 
     AnthropicConversation:
       type: object
@@ -209,10 +482,7 @@ components:
         createdAt:
           type: string
           format: date-time
-      required:
-        - id
-        - title
-        - createdAt
+      required: [id, title, createdAt]
 
     AnthropicMessage:
       type: object
@@ -228,28 +498,21 @@ components:
         createdAt:
           type: string
           format: date-time
-      required:
-        - id
-        - conversationId
-        - role
-        - content
-        - createdAt
+      required: [id, conversationId, role, content, createdAt]
 
     AnthropicConversationInput:
       type: object
       properties:
         title:
           type: string
-      required:
-        - title
+      required: [title]
 
     AnthropicMessageInput:
       type: object
       properties:
         content:
           type: string
-      required:
-        - content
+      required: [content]
 
     AnthropicConversationWithMessages:
       type: object
@@ -265,36 +528,26 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/AnthropicMessage"
-      required:
-        - id
-        - title
-        - createdAt
-        - messages
+      required: [id, title, createdAt, messages]
 
     AnthropicError:
       type: object
       properties:
         error:
           type: string
-      required:
-        - error
+      required: [error]
 
     AnalyzeInput:
       type: object
       properties:
         target:
           type: string
-          description: The wallet address, token address, contract address, or project name to analyze
         type:
           type: string
           enum: [wallet, token, contract, project]
-          description: The type of target to analyze
         chain:
           type: string
-          description: Blockchain network (e.g. ethereum, solana, okx)
-      required:
-        - target
-        - type
+      required: [target, type]
 
     AnalyzeResult:
       type: object
@@ -309,7 +562,6 @@ components:
           type: string
         riskScore:
           type: ["integer", "null"]
-          description: Risk score 0-100 (0=low risk, 100=high risk)
         metrics:
           type: array
           items:
@@ -321,15 +573,7 @@ components:
         analyzedAt:
           type: string
           format: date-time
-      required:
-        - target
-        - type
-        - chain
-        - summary
-        - riskScore
-        - metrics
-        - insights
-        - analyzedAt
+      required: [target, type, chain, summary, riskScore, metrics, insights, analyzedAt]
 
     AnalyzeMetric:
       type: object
@@ -341,10 +585,7 @@ components:
         trend:
           type: ["string", "null"]
           enum: [up, down, neutral, null]
-      required:
-        - label
-        - value
-        - trend
+      required: [label, value, trend]
 
     Agent:
       type: object
@@ -365,10 +606,4 @@ components:
           type: array
           items:
             type: string
-      required:
-        - id
-        - name
-        - description
-        - category
-        - status
-        - capabilities
+      required: [id, name, description, category, status, capabilities]
