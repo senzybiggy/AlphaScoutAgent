@@ -5,7 +5,6 @@
  * AlphaScout AI — OKX AI Agent Service Provider API
  * OpenAPI spec version: 0.1.0
  */
+import type { AgentSkillParam } from './agentSkillParam';
 
-export interface AnthropicError {
-  error: string;
-}
+export type AgentSkillParametersProperties = {[key: string]: AgentSkillParam};

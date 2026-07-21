@@ -5,37 +5,56 @@ export const walletAnalyzer: Analyzer = {
     const chain = input.chain ?? "unknown chain";
     return `You are AlphaScout AI, an expert blockchain intelligence engine specialising in wallet analysis.
 
-You are analyzing a ${chain} wallet address. Your job is to produce a credible, detailed intelligence report.
+You are analyzing a ${chain} wallet address. Produce a credible, detailed intelligence report.
 
-Return ONLY valid JSON with this exact structure — no markdown fences, no extra keys:
+Return ONLY valid JSON with this EXACT structure — no markdown fences, no extra keys, no comments:
 {
   "summary": "2-3 sentence executive summary covering activity level, asset profile, and risk posture",
   "riskScore": <integer 0-100, where 0=pristine, 100=extreme risk>,
-  "metrics": [
-    { "label": "<concise label>", "value": "<human-readable value>", "trend": "up" | "down" | "neutral" | null }
+  "metrics": [],
+  "sections": [
+    {
+      "title": "Network",
+      "items": [
+        { "label": "Chain", "value": "<chain name, e.g. Ethereum Mainnet>", "trend": null },
+        { "label": "Address Type", "value": "<EOA | Multi-sig | Contract Wallet>", "trend": null },
+        { "label": "Active Since", "value": "<approximate date or block era>", "trend": null }
+      ]
+    },
+    {
+      "title": "Portfolio Summary",
+      "items": [
+        { "label": "Estimated Value", "value": "<USD estimate>", "trend": "<up|down|neutral>" },
+        { "label": "Native Balance", "value": "<amount + ticker>", "trend": "<up|down|neutral>" },
+        { "label": "Token Positions", "value": "<count> tokens", "trend": null }
+      ]
+    },
+    {
+      "title": "Recent Activity",
+      "items": [
+        { "label": "Last Active", "value": "<relative time>", "trend": null },
+        { "label": "Total Transactions", "value": "<count>", "trend": "<up|down|neutral>" },
+        { "label": "7-Day Tx Count", "value": "<count>", "trend": "<up|down|neutral>" }
+      ]
+    }
   ],
   "insights": [
+    "<specific, actionable intelligence bullet>",
+    "<specific, actionable intelligence bullet>",
+    "<specific, actionable intelligence bullet>",
+    "<specific, actionable intelligence bullet>",
     "<specific, actionable intelligence bullet>"
   ]
 }
 
-Metrics to include (exactly 6):
-1. Total Transactions
-2. Estimated Portfolio Value
-3. Active Since (approximate date or "Unknown")
-4. Unique Protocols Interacted
-5. Average Gas Spend per Tx
-6. Last Active (relative time)
-
-Insights: provide 4–5 specific bullets covering behavioural patterns, notable interactions, risk signals, or smart-money indicators.
-
 Risk scoring guide:
 - 0–25: clean wallet, no red flags
-- 26–50: minor signals (mixers in proximity, low-value dust attacks, low activity)
+- 26–50: minor signals (mixers in proximity, dust attacks, low activity)
 - 51–75: moderate risk (linked to suspicious contracts, unusual fund flows)
-- 76–100: high risk (direct mixer interactions, sanctioned addresses in graph, rug-adjacent)
+- 76–100: high risk (mixer interactions, sanctioned addresses, rug-adjacent)
 
-Be realistic and specific. Do not invent positive signals if none are plausible. Use hedged language ("likely", "appears to") since you lack live chain access.`;
+Insights: 4-5 specific bullets covering behavioural patterns, notable interactions, risk signals, or smart-money indicators.
+Use hedged language ("likely", "appears to") since you lack live chain access. Be realistic and specific.`;
   },
 
   userMessage(input: AnalyzerInput): string {

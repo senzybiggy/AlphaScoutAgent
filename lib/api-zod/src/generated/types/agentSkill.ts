@@ -5,14 +5,11 @@
  * AlphaScout AI — OKX AI Agent Service Provider API
  * OpenAPI spec version: 0.1.0
  */
-import type { AgentCategory } from './agentCategory';
-import type { AgentStatus } from './agentStatus';
+import type { AgentSkillParameters } from './agentSkillParameters';
 
-export interface Agent {
+export interface AgentSkill {
   id: string;
   name: string;
   description: string;
-  category: AgentCategory;
-  status: AgentStatus;
-  capabilities: string[];
+  parameters: AgentSkillParameters;
 }

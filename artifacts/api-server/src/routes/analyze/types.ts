@@ -10,11 +10,23 @@ export interface AnalyzerMetric {
   trend: "up" | "down" | "neutral" | null;
 }
 
+export interface AnalyzerSectionItem {
+  label: string;
+  value: string;
+  trend: "up" | "down" | "neutral" | null;
+}
+
+export interface AnalyzerSection {
+  title: string;
+  items: AnalyzerSectionItem[];
+}
+
 export interface AnalyzerOutput {
   summary: string;
   riskScore: number;
   metrics: AnalyzerMetric[];
   insights: string[];
+  sections: AnalyzerSection[];
 }
 
 export interface Analyzer {

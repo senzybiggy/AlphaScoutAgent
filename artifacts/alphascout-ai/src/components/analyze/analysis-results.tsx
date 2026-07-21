@@ -9,7 +9,28 @@ interface AnalysisResultsProps {
   result: AnalyzeResult;
 }
 
+const INSIGHTS_LABEL: Record<string, string> = {
+  wallet:   "AI INSIGHTS",
+  token:    "AI SUMMARY",
+  contract: "AI EXPLANATION",
+  project:  "AI RECOMMENDATION",
+};
+
+function TrendIcon({ trend }: { trend: string | null | undefined }) {
+  if (trend === "up")      return <TrendingUp  className="w-4 h-4 text-success ml-auto flex-shrink-0" />;
+  if (trend === "down")    return <TrendingDown className="w-4 h-4 text-destructive ml-auto flex-shrink-0" />;
+  if (trend === "neutral") return <Minus        className="w-4 h-4 text-muted-foreground ml-auto flex-shrink-0" />;
+  return null;
+}
+
 export function AnalysisResults({ result }: AnalysisResultsProps) {
+  const insightsLabel = INSIGHTS_LABEL[result.type] ?? "AI INSIGHTS & VULNERABILITIES";
+
+  // Type-specific sections from the new API (preferred), fallback to legacy flat metrics
+  const hasSections = Array.isArray((result as any).sections) && (result as any).sections.length > 0;
+  const sections: Array<{ title: string; items: Array<{ label: string; value: string; trend: string | null }> }> =
+    hasSections ? (result as any).sections : [];
+
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex flex-col md:flex-row gap-6">
@@ -47,8 +68,38 @@ export function AnalysisResults({ result }: AnalysisResultsProps) {
         )}
       </div>
 
-      {/* Metrics Grid */}
-      {result.metrics.length > 0 && (
+      {/* Type-specific sections */}
+      {hasSections && (
+        <div className="space-y-6">
+          {sections.map((section, si) => (
+            <div key={si}>
+              <h3 className="text-sm font-mono text-muted-foreground mb-4 uppercase tracking-wider">
+                {section.title}
+              </h3>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {section.items.map((item, ii) => (
+                  <Card key={ii} className="bg-card/30 border-border/30">
+                    <CardContent className="p-4 flex flex-col items-start">
+                      <span className="text-xs text-muted-foreground font-mono uppercase mb-1 leading-tight">
+                        {item.label}
+                      </span>
+                      <div className="flex items-baseline gap-2 w-full mt-1">
+                        <span className="text-sm font-bold font-mono break-words leading-snug flex-1 min-w-0">
+                          {item.value}
+                        </span>
+                        <TrendIcon trend={item.trend} />
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Legacy flat metrics grid — shown when sections are absent */}
+      {!hasSections && result.metrics.length > 0 && (
         <div>
           <h3 className="text-sm font-mono text-muted-foreground mb-4">KEY METRICS</h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -58,9 +109,7 @@ export function AnalysisResults({ result }: AnalysisResultsProps) {
                   <span className="text-xs text-muted-foreground font-mono uppercase mb-1">{metric.label}</span>
                   <div className="flex items-baseline gap-2 w-full">
                     <span className="text-xl font-bold font-mono truncate">{metric.value}</span>
-                    {metric.trend === 'up' && <TrendingUp className="w-4 h-4 text-success ml-auto flex-shrink-0" />}
-                    {metric.trend === 'down' && <TrendingDown className="w-4 h-4 text-destructive ml-auto flex-shrink-0" />}
-                    {metric.trend === 'neutral' && <Minus className="w-4 h-4 text-muted-foreground ml-auto flex-shrink-0" />}
+                    <TrendIcon trend={metric.trend} />
                   </div>
                 </CardContent>
               </Card>
@@ -69,13 +118,13 @@ export function AnalysisResults({ result }: AnalysisResultsProps) {
         </div>
       )}
 
-      {/* Insights List */}
+      {/* Insights / Summary / Explanation / Recommendation */}
       {result.insights.length > 0 && (
         <Card className="bg-card/50 border-border/50 scanline">
           <CardHeader className="pb-3 border-b border-border/20">
             <CardTitle className="text-sm font-mono flex items-center gap-2">
               <ShieldAlert className="w-4 h-4 text-primary" />
-              AI INSIGHTS & VULNERABILITIES
+              {insightsLabel}
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-4">

@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { callAI } from "@workspace/integrations-anthropic-ai";
 import { logger } from "../../lib/logger.js";
-import type { AnalyzerInput, AnalyzerOutput } from "./types.js";
+import type { AnalyzerInput, AnalyzerOutput, AnalyzerSection } from "./types.js";
 import { walletAnalyzer } from "./wallet.js";
 import { tokenAnalyzer } from "./token.js";
 import { contractAnalyzer } from "./contract.js";
@@ -18,6 +18,26 @@ const ANALYZERS = {
 
 type AnalyzeType = keyof typeof ANALYZERS;
 const VALID_TYPES = Object.keys(ANALYZERS) as AnalyzeType[];
+
+function parseTrend(v: unknown): "up" | "down" | "neutral" | null {
+  return ["up", "down", "neutral"].includes(String(v))
+    ? (v as "up" | "down" | "neutral")
+    : null;
+}
+
+function parseSections(raw: unknown): AnalyzerSection[] {
+  if (!Array.isArray(raw)) return [];
+  return (raw as Array<Record<string, unknown>>).map((s) => ({
+    title: String(s.title ?? ""),
+    items: Array.isArray(s.items)
+      ? (s.items as Array<Record<string, unknown>>).map((item) => ({
+          label: String(item.label ?? ""),
+          value: String(item.value ?? ""),
+          trend: parseTrend(item.trend),
+        }))
+      : [],
+  }));
+}
 
 function parseAiOutput(text: string): AnalyzerOutput {
   const stripped = text
@@ -41,13 +61,12 @@ function parseAiOutput(text: string): AnalyzerOutput {
     throw new Error("Invalid riskScore in AI response");
   }
 
+  // Legacy flat metrics — kept for backward compat but new prompts return []
   const metrics = Array.isArray(raw.metrics)
     ? (raw.metrics as Array<Record<string, unknown>>).map((m) => ({
         label: String(m.label ?? ""),
         value: String(m.value ?? ""),
-        trend: (["up", "down", "neutral"].includes(String(m.trend))
-          ? m.trend
-          : null) as "up" | "down" | "neutral" | null,
+        trend: parseTrend(m.trend),
       }))
     : [];
 
@@ -55,11 +74,14 @@ function parseAiOutput(text: string): AnalyzerOutput {
     ? (raw.insights as unknown[]).map(String)
     : [];
 
+  const sections = parseSections(raw.sections);
+
   return {
     summary: String(raw.summary ?? "No summary available."),
     riskScore: Math.min(100, Math.max(0, Math.round(riskScore))),
     metrics,
     insights,
+    sections,
   };
 }
 
@@ -116,6 +138,7 @@ router.post("/", async (req, res) => {
       summary: parsed.summary,
       riskScore: parsed.riskScore,
       metrics: parsed.metrics,
+      sections: parsed.sections,
       insights: parsed.insights,
       analyzedAt: new Date().toISOString(),
     });

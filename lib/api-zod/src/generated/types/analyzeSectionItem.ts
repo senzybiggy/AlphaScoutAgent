@@ -5,11 +5,11 @@
  * AlphaScout AI — OKX AI Agent Service Provider API
  * OpenAPI spec version: 0.1.0
  */
-import type { AnalyzeMetricTrend } from './analyzeMetricTrend';
+import type { AnalyzeSectionItemTrend } from './analyzeSectionItemTrend';
 
-export interface AnalyzeMetric {
+export interface AnalyzeSectionItem {
   label: string;
   value: string;
   /** @nullable */
-  trend: AnalyzeMetricTrend;
+  trend: AnalyzeSectionItemTrend;
 }

@@ -6,27 +6,53 @@ export const projectAnalyzer: Analyzer = {
 
 You are analyzing a crypto project by name or URL. Produce a credible fundamental analysis and risk report.
 
-Return ONLY valid JSON with this exact structure — no markdown fences, no extra keys:
+Return ONLY valid JSON with this EXACT structure — no markdown fences, no extra keys, no comments:
 {
   "summary": "2-3 sentence executive summary covering project category, traction signals, and overall risk posture",
   "riskScore": <integer 0-100, where 0=strong fundamentals, 100=likely scam>,
-  "metrics": [
-    { "label": "<concise label>", "value": "<human-readable value>", "trend": "up" | "down" | "neutral" | null }
+  "metrics": [],
+  "sections": [
+    {
+      "title": "Website & Presence",
+      "items": [
+        { "label": "Project Category", "value": "<DeFi | NFT | L1 | L2 | GameFi | Infrastructure | Other>", "trend": null },
+        { "label": "Launch Date", "value": "<year or approximate>", "trend": null },
+        { "label": "Website Status", "value": "<Active | Sparse | Unavailable>", "trend": null }
+      ]
+    },
+    {
+      "title": "Ecosystem",
+      "items": [
+        { "label": "Supported Chains", "value": "<chain list>", "trend": null },
+        { "label": "Total Value Locked", "value": "<USD estimate or N/A>", "trend": "<up|down|neutral>" },
+        { "label": "Team Transparency", "value": "<Fully Doxxed | Pseudonymous | Anonymous>", "trend": null }
+      ]
+    },
+    {
+      "title": "Token Utility",
+      "items": [
+        { "label": "Token Ticker", "value": "<ticker or N/A>", "trend": null },
+        { "label": "Token Use Case", "value": "<Governance | Fee | Utility | None>", "trend": null },
+        { "label": "Vesting Schedule", "value": "<team vesting details or Unknown>", "trend": null }
+      ]
+    },
+    {
+      "title": "Community & Development",
+      "items": [
+        { "label": "GitHub Activity", "value": "<Active — X commits/week | Stale — last commit Xmo ago | Private>", "trend": "<up|down|neutral>" },
+        { "label": "Community Size", "value": "<Discord/Telegram estimate or Unknown>", "trend": "<up|down|neutral>" },
+        { "label": "Audit Count", "value": "<N completed | None | In progress>", "trend": null }
+      ]
+    }
   ],
   "insights": [
+    "<specific, actionable due diligence finding>",
+    "<specific, actionable due diligence finding>",
+    "<specific, actionable due diligence finding>",
+    "<specific, actionable due diligence finding>",
     "<specific, actionable due diligence finding>"
   ]
 }
-
-Metrics to include (exactly 6):
-1. Team Transparency (e.g., "Fully Doxxed", "Pseudonymous", "Anonymous")
-2. Audit Count (e.g., "2 completed", "None", "In progress")
-3. Total Value Locked (estimated or "N/A")
-4. GitHub Activity (e.g., "Active — 3 commits/week", "Stale — last commit 8mo ago")
-5. Community Size (Discord/Telegram estimate)
-6. Token Vesting (team allocation vesting schedule)
-
-Insights: provide 4–5 bullets covering: team credibility signals, tokenomics red flags or positives, roadmap delivery track record, community health, and competitive positioning.
 
 Risk scoring guide:
 - 0–25: doxxed team, multiple audits, healthy TVL, active dev
@@ -34,7 +60,8 @@ Risk scoring guide:
 - 51–75: anonymous team, no audit, aggressive tokenomics
 - 76–100: classic rug indicators (anon team, no audit, locked exit liquidity)
 
-Use hedged, professional language. Clearly note when analysis is based on publicly available signals vs inference.`;
+Insights: 4-5 bullets covering team credibility, tokenomics, roadmap delivery, community health, and competitive positioning.
+Use hedged, professional language. Clearly note when analysis is based on public signals vs inference.`;
   },
 
   userMessage(input: AnalyzerInput): string {

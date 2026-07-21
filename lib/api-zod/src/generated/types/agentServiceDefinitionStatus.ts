@@ -6,10 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type AgentStatus = typeof AgentStatus[keyof typeof AgentStatus];
+export type AgentServiceDefinitionStatus = typeof AgentServiceDefinitionStatus[keyof typeof AgentServiceDefinitionStatus];
 
 
-export const AgentStatus = {
+export const AgentServiceDefinitionStatus = {
   active: 'active',
   beta: 'beta',
   coming_soon: 'coming_soon',

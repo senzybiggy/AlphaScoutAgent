@@ -566,6 +566,10 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/AnalyzeMetric"
+        sections:
+          type: array
+          items:
+            $ref: "#/components/schemas/AnalyzeSection"
         insights:
           type: array
           items:
@@ -573,7 +577,7 @@ components:
         analyzedAt:
           type: string
           format: date-time
-      required: [target, type, chain, summary, riskScore, metrics, insights, analyzedAt]
+      required: [target, type, chain, summary, riskScore, metrics, sections, insights, analyzedAt]
 
     AnalyzeMetric:
       type: object
@@ -586,6 +590,29 @@ components:
           type: ["string", "null"]
           enum: [up, down, neutral, null]
       required: [label, value, trend]
+
+    AnalyzeSectionItem:
+      type: object
+      properties:
+        label:
+          type: string
+        value:
+          type: string
+        trend:
+          type: ["string", "null"]
+          enum: [up, down, neutral, null]
+      required: [label, value, trend]
+
+    AnalyzeSection:
+      type: object
+      properties:
+        title:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AnalyzeSectionItem"
+      required: [title, items]
 
     Agent:
       type: object

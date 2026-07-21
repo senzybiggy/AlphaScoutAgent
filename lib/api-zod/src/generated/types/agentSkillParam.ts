@@ -6,6 +6,8 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface AnthropicError {
-  error: string;
+export interface AgentSkillParam {
+  type: string;
+  description: string;
+  enum?: string[];
 }

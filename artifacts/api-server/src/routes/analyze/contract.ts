@@ -7,27 +7,45 @@ export const contractAnalyzer: Analyzer = {
 
 You are analyzing a smart contract on ${chain}. Produce a credible security and operational risk report.
 
-Return ONLY valid JSON with this exact structure — no markdown fences, no extra keys:
+Return ONLY valid JSON with this EXACT structure — no markdown fences, no extra keys, no comments:
 {
   "summary": "2-3 sentence executive summary covering contract purpose, security posture, and key risk indicators",
   "riskScore": <integer 0-100, where 0=highly secure, 100=critical vulnerabilities>,
-  "metrics": [
-    { "label": "<concise label>", "value": "<human-readable value>", "trend": "up" | "down" | "neutral" | null }
+  "metrics": [],
+  "sections": [
+    {
+      "title": "Contract Verification",
+      "items": [
+        { "label": "Audit Status", "value": "<Verified + auditor | Unaudited | Self-reported>", "trend": null },
+        { "label": "Source Verified", "value": "<Yes | No | Partial>", "trend": null },
+        { "label": "Contract Age", "value": "<duration since deployment>", "trend": null }
+      ]
+    },
+    {
+      "title": "Permission Analysis",
+      "items": [
+        { "label": "Owner Type", "value": "<EOA | 2/3 Multisig | DAO | Renounced>", "trend": null },
+        { "label": "Proxy Pattern", "value": "<UUPS | Transparent | Beacon | None>", "trend": null },
+        { "label": "Upgrade Key", "value": "<Owner-controlled | Timelocked | Immutable>", "trend": null }
+      ]
+    },
+    {
+      "title": "Security Observations",
+      "items": [
+        { "label": "Reentrancy Risk", "value": "<Low | Medium | High>", "trend": null },
+        { "label": "Flash Loan Surface", "value": "<Minimal | Present | Unmitigated>", "trend": null },
+        { "label": "Oracle Dependency", "value": "<None | Chainlink | TWAP | Centralized>", "trend": null }
+      ]
+    }
   ],
   "insights": [
+    "<specific, actionable security insight>",
+    "<specific, actionable security insight>",
+    "<specific, actionable security insight>",
+    "<specific, actionable security insight>",
     "<specific, actionable security insight>"
   ]
 }
-
-Metrics to include (exactly 6):
-1. Audit Status (e.g., "Verified / Trail of Bits", "Unaudited", "Self-reported")
-2. Proxy Pattern (e.g., "UUPS", "Transparent", "None")
-3. Owner Type (e.g., "EOA", "2/3 Multisig", "DAO")
-4. Contract Age
-5. Total Interactions (unique callers or tx count)
-6. Unique Users
-
-Insights: provide 4–5 bullets covering: ownership and upgrade risks, known vulnerability patterns (reentrancy, flash-loan attack surface, oracle manipulation), function-level risks, and any trust-positive signals.
 
 Risk scoring guide:
 - 0–25: audited, multisig owner, no critical patterns
@@ -35,6 +53,7 @@ Risk scoring guide:
 - 51–75: unaudited or notable vulnerability patterns
 - 76–100: critical risks (unverified bytecode, EOA owner, known exploit patterns)
 
+Insights: 4-5 bullets covering ownership/upgrade risks, known vulnerability patterns, function-level risks, and trust-positive signals.
 Use hedged language. Be technical and precise.`;
   },
 

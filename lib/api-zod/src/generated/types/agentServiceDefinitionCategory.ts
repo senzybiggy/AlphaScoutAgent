@@ -6,10 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type AgentCategory = typeof AgentCategory[keyof typeof AgentCategory];
+export type AgentServiceDefinitionCategory = typeof AgentServiceDefinitionCategory[keyof typeof AgentServiceDefinitionCategory];
 
 
-export const AgentCategory = {
+export const AgentServiceDefinitionCategory = {
   analysis: 'analysis',
   trading: 'trading',
   monitoring: 'monitoring',

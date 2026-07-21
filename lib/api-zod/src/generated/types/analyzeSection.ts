@@ -5,7 +5,9 @@
  * AlphaScout AI — OKX AI Agent Service Provider API
  * OpenAPI spec version: 0.1.0
  */
+import type { AnalyzeSectionItem } from './analyzeSectionItem';
 
-export interface AnthropicError {
-  error: string;
+export interface AnalyzeSection {
+  title: string;
+  items: AnalyzeSectionItem[];
 }

@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface AnthropicError {
-  error: string;
-}
+/**
+ * Skill-specific parameters (see /agent/agents/:id for schema)
+ */
+export type AgentRequestParameters = { [key: string]: unknown };

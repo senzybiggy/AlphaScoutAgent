@@ -9,10 +9,10 @@
 /**
  * @nullable
  */
-export type AnalyzeMetricTrend = typeof AnalyzeMetricTrend[keyof typeof AnalyzeMetricTrend] | null;
+export type AnalyzeSectionItemTrend = typeof AnalyzeSectionItemTrend[keyof typeof AnalyzeSectionItemTrend] | null;
 
 
-export const AnalyzeMetricTrend = {
+export const AnalyzeSectionItemTrend = {
   up: 'up',
   down: 'down',
   neutral: 'neutral',
