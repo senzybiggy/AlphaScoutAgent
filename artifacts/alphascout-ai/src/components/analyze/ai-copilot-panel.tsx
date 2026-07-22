@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from "react";
+import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Cpu, Send, Loader2, User, Bot, ChevronDown, ChevronUp, Trash2 } from "lucide-react";
+import { Cpu, Send, Loader2, User, Bot, ChevronDown, ChevronUp, Trash2, MessageSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Message { role: "user" | "assistant"; content: string }
@@ -56,6 +57,7 @@ function formatMessage(content: string): React.ReactNode {
 }
 
 export function AICopilotPanel({ context, target }: Props) {
+  const [, navigate] = useLocation();
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -63,6 +65,15 @@ export function AICopilotPanel({ context, target }: Props) {
   const [error, setError] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const openInChat = () => {
+    localStorage.setItem("alphascout_copilot_ctx", JSON.stringify({
+      context,
+      target,
+      timestamp: Date.now(),
+    }));
+    navigate("/chat");
+  };
 
   useEffect(() => {
     if (open) {
@@ -108,6 +119,13 @@ export function AICopilotPanel({ context, target }: Props) {
                 {Math.ceil(messages.length / 2)} msg{Math.ceil(messages.length / 2) !== 1 ? "s" : ""}
               </span>
             )}
+            <button
+              onClick={(e) => { e.stopPropagation(); openInChat(); }}
+              className="flex items-center gap-1 text-[10px] font-mono text-muted-foreground/60 hover:text-primary px-1.5 py-0.5 rounded border border-border/30 hover:border-primary/30 transition-colors"
+              title="Open this scan in full Chat"
+            >
+              <MessageSquare className="h-3 w-3" />Chat
+            </button>
             {open ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
           </span>
         </CardTitle>

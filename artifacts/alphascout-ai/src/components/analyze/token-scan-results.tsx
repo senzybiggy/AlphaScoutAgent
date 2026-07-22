@@ -1,7 +1,9 @@
+import { Link } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { RiskGauge } from "./risk-gauge";
-import { Shield, AlertTriangle, CheckCircle, XCircle, HelpCircle, TrendingUp, TrendingDown, Globe, ExternalLink, Coins, Users } from "lucide-react";
+import { Shield, AlertTriangle, CheckCircle, XCircle, HelpCircle, TrendingUp, TrendingDown, Globe, ExternalLink, Coins, Users, FlaskConical } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { TokenScanData, TokenSecurity } from "@/lib/scan-types";
 import { fmtUsd, shortAddr, riskColor } from "@/lib/scan-types";
@@ -152,20 +154,26 @@ export function TokenScanResults({ data, riskScore, summary, insights, risks, op
             {data.pairCreatedAt && <Badge variant="outline" className="text-xs font-mono text-muted-foreground">Listed {new Date(data.pairCreatedAt).toLocaleDateString()}</Badge>}
           </div>
         </div>
-        {data.websites.length > 0 && (
-          <div className="flex gap-2 ml-auto">
-            {data.websites.slice(0, 2).map((w) => (
-              <a key={w} href={w} target="_blank" rel="noopener noreferrer" className="p-2 rounded-lg border border-border/30 hover:border-primary/40 text-muted-foreground hover:text-primary transition-colors">
-                <Globe className="h-4 w-4" />
-              </a>
-            ))}
-            {data.socials.slice(0, 3).map((s) => (
-              <a key={s.url} href={s.url} target="_blank" rel="noopener noreferrer" className="p-2 rounded-lg border border-border/30 hover:border-primary/40 text-muted-foreground hover:text-primary transition-colors text-xs font-mono capitalize">
-                {s.type}
-              </a>
-            ))}
-          </div>
-        )}
+        <div className="flex gap-2 ml-auto flex-wrap items-center">
+          {/* Deep-link to dedicated Token Research page */}
+          {data.contractAddress && (
+            <Link href={`/token/${data.contractAddress}${data.chainId ? `?chain=${data.chainId}` : ""}`}>
+              <Button size="sm" variant="outline" className="gap-1.5 text-xs font-mono h-7 border-primary/30 hover:border-primary text-primary/70 hover:text-primary">
+                <FlaskConical className="h-3.5 w-3.5" />Deep Research
+              </Button>
+            </Link>
+          )}
+          {data.websites.slice(0, 1).map((w) => (
+            <a key={w} href={w} target="_blank" rel="noopener noreferrer" className="p-2 rounded-lg border border-border/30 hover:border-primary/40 text-muted-foreground hover:text-primary transition-colors">
+              <Globe className="h-4 w-4" />
+            </a>
+          ))}
+          {data.socials.slice(0, 2).map((s) => (
+            <a key={s.url} href={s.url} target="_blank" rel="noopener noreferrer" className="p-2 rounded-lg border border-border/30 hover:border-primary/40 text-muted-foreground hover:text-primary transition-colors text-xs font-mono capitalize">
+              {s.type}
+            </a>
+          ))}
+        </div>
       </div>
 
       {/* Honeypot critical alert */}

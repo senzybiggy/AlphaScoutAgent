@@ -20,6 +20,7 @@ import { Dashboard } from "./pages/dashboard";
 import { SmartMoney } from "./pages/smart-money";
 import { WhaleTracker } from "./pages/whale-tracker";
 import { RugPullDetector } from "./pages/rug-pull";
+import { TokenResearch } from "./pages/token-research";
 
 // Components
 import { Navbar } from "./components/layout/navbar";
@@ -54,6 +55,7 @@ function Router() {
           <Route path="/smart-money" component={SmartMoney} />
           <Route path="/whale-tracker" component={WhaleTracker} />
           <Route path="/rug-pull" component={RugPullDetector} />
+          <Route path="/token/:address" component={TokenResearch} />
           <Route path="/share/:token" component={ShareView} />
           <Route component={NotFound} />
         </Switch>

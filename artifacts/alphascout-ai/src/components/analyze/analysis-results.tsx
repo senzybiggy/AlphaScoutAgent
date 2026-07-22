@@ -33,7 +33,7 @@ function TrendIcon({ trend }: { trend: string | null | undefined }) {
   return null;
 }
 
-/** Build a trimmed context string for the AI copilot. */
+/** Build a rich context string for the AI copilot — includes all provider signals and data sources. */
 function buildCopilotContext(r: RichAnalyzeResult): string {
   const trimmed: Record<string, unknown> = {
     target: r.target,
@@ -42,6 +42,8 @@ function buildCopilotContext(r: RichAnalyzeResult): string {
     summary: r.summary,
     riskScore: r.riskScore,
     confidenceScore: r.confidenceScore,
+    dataQualityScore: r.dataQualityScore,
+    reliabilityScore: r.reliabilityScore,
     insights: r.insights,
     risks: r.risks,
     opportunities: r.opportunities,
@@ -49,6 +51,16 @@ function buildCopilotContext(r: RichAnalyzeResult): string {
     smartMoneyScore: r.smartMoneyScore,
     walletHealthScore: r.walletHealthScore,
     analyzedAt: r.analyzedAt,
+    // Field-level data sources so the AI can cite providers accurately
+    fieldSources: r.fieldSources,
+    // Provider attempt summary so the AI knows what data was available
+    providerAttempts: (r.providerAttempts ?? []).map((a) => ({
+      provider: a.provider,
+      category: a.category,
+      status: a.status,
+      latencyMs: a.latencyMs,
+      ...(a.status === "failed" && a.error ? { error: a.error } : {}),
+    })),
   };
 
   if (r.walletScan) {
@@ -88,13 +100,17 @@ function buildCopilotContext(r: RichAnalyzeResult): string {
       symbol: t.symbol, name: t.name, chainId: t.chainId,
       contractAddress: t.contractAddress,
       priceUsd: t.priceUsd, priceChange24h: t.priceChange24h,
+      priceChange6h: t.priceChange6h, priceChange1h: t.priceChange1h,
       marketCapUsd: t.marketCapUsd, fdvUsd: t.fdvUsd,
       liquidityUsd: t.liquidityUsd, volumeH24: t.volumeH24,
       buys24h: t.buys24h, sells24h: t.sells24h, holderCount: t.holderCount,
       security: t.security,
       cgDescription: t.cgDescription,
       cgCategories: t.cgCategories,
-      topHolders: t.topHolders.slice(0, 5),
+      cgAthUsd: t.cgAthUsd, cgAthChangePercent: t.cgAthChangePercent,
+      cgGenesisDate: t.cgGenesisDate,
+      topHolders: t.topHolders.slice(0, 10),
+      dexPairs: t.dexPairs,
       recommendations: t.recommendations,
     };
   }
