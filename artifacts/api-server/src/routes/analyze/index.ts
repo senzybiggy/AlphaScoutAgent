@@ -10,6 +10,7 @@ import { callAI } from "@workspace/integrations-anthropic-ai";
 import { db, scanHistory } from "@workspace/db";
 import { logger } from "../../lib/logger.js";
 import { analyzeTarget, VALID_TYPES } from "../../services/analyze-service.js";
+import { detectEntityType } from "../../services/type-detector.js";
 import type { AnalyzerInput } from "./types.js";
 import { analysisLimiter } from "../../middlewares/rate-limit.js";
 
@@ -95,6 +96,23 @@ INSTRUCTIONS:
     const msg = err instanceof Error ? err.message : String(err);
     logger.error({ err }, "Scan chat error");
     res.status(500).json({ error: msg });
+  }
+});
+
+// ── Entity type detection (lightweight, cached) ──────────────────────────────
+
+router.get("/detect-type", async (req, res) => {
+  const { address, chain } = req.query as { address?: string; chain?: string };
+  if (!address?.trim()) {
+    res.status(400).json({ error: "address query param is required" });
+    return;
+  }
+  try {
+    const result = await detectEntityType(address.trim(), chain?.trim() ?? null);
+    res.json(result);
+  } catch (err) {
+    logger.error({ err }, "detect-type error");
+    res.status(500).json({ error: "Detection failed" });
   }
 });
 

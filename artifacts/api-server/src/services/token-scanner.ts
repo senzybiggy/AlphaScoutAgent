@@ -165,6 +165,7 @@ export async function scanToken(
     buys24h:        best?.txns.h24?.buys       ?? null,
     sells24h:       best?.txns.h24?.sells      ?? null,
     holderCount:    sec?.holderCount           ?? null,
+    totalSupply:    sec?.totalSupply           ?? null,
     topHolders,
 
     dexPairs: dexData.pairs.slice(0, 5).map((p) => ({

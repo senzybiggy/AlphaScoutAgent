@@ -66,6 +66,7 @@ export interface TokenScanData {
   marketCapUsd: number | null; fdvUsd: number | null;
   liquidityUsd: number | null; volumeH24: number | null;
   buys24h: number | null; sells24h: number | null; holderCount: number | null;
+  totalSupply: string | null;
   topHolders: { address: string; pct: number; tag: string | null; isLocked: boolean }[];
   dexPairs: { name: string; liquidity: string; pair: string }[];
   pairCreatedAt: string | null; imageUrl: string | null;

@@ -30,6 +30,7 @@ import { scanToken }     from "./token-scanner.js";
 import type { TokenScanResult } from "./token-scanner.js";
 import { checkTokenSecurity } from "./goplus.js";
 import { scoreData, DATA_QUALITY_THRESHOLDS } from "./data-quality.js";
+import { detectEntityType } from "./type-detector.js";
 
 export interface AnalysisResult {
   target: string;
@@ -261,6 +262,22 @@ function buildUnavailableResult(
 // ── Main orchestrator ─────────────────────────────────────────────────────────
 
 export async function analyzeTarget(input: AnalyzerInput): Promise<AnalysisResult> {
+  // ── Auto-detect entity type for EVM addresses submitted as "wallet" ────────
+  // Users often paste ERC-20 token contracts into the wallet field. Probe
+  // DexScreener + GoPlus to reclassify before routing to the wrong analyzer.
+  // This also benefits from cache primed by the frontend /detect-type call.
+  const isEvmAddress = /^0x[0-9a-fA-F]{40}$/.test(input.target);
+  if (input.type === "wallet" && isEvmAddress) {
+    const detected = await detectEntityType(input.target, input.chain ?? null);
+    if (detected.type !== "wallet") {
+      logger.info(
+        { target: input.target, from: "wallet", to: detected.type },
+        "Entity type auto-corrected from wallet",
+      );
+      input = { ...input, type: detected.type as AnalyzerInput["type"] };
+    }
+  }
+
   const analyzer = ANALYZERS[input.type as AnalyzeType];
   if (!analyzer) throw new Error(`Unknown analysis type: "${input.type}"`);
 

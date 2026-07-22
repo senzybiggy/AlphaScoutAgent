@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { RiskGauge } from "./risk-gauge";
-import { Shield, AlertTriangle, CheckCircle, XCircle, HelpCircle, TrendingUp, TrendingDown, Globe, ExternalLink, Coins, Users, FlaskConical } from "lucide-react";
+import { Shield, AlertTriangle, CheckCircle, XCircle, HelpCircle, TrendingUp, TrendingDown, Globe, ExternalLink, Coins, Users, FlaskConical, Cpu } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { TokenScanData, TokenSecurity } from "@/lib/scan-types";
 import { fmtUsd, shortAddr, riskColor } from "@/lib/scan-types";
@@ -19,6 +19,16 @@ interface Props {
   recommendations: string[];
   target: string;
   fieldSources?: Record<string, string>;
+}
+
+function formatSupply(supply: string | null): string {
+  if (!supply) return "—";
+  const n = parseFloat(supply);
+  if (isNaN(n)) return supply;
+  if (n >= 1e12) return `${(n / 1e12).toFixed(2)}T`;
+  if (n >= 1e9)  return `${(n / 1e9).toFixed(2)}B`;
+  if (n >= 1e6)  return `${(n / 1e6).toFixed(2)}M`;
+  return n.toLocaleString();
 }
 
 function SourceBadge({ source }: { source?: string }) {
@@ -142,6 +152,22 @@ function SecuritySummary({ sec, sourceLabel }: { sec: TokenSecurity; sourceLabel
 export function TokenScanResults({ data, riskScore, summary, insights, risks, opportunities, confidenceScore, recommendations, target, fieldSources }: Props) {
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      {/* Token Intelligence banner */}
+      <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-yellow-400/20 bg-yellow-400/5">
+        <Cpu className="h-3.5 w-3.5 text-yellow-400 flex-shrink-0" />
+        <span className="text-xs font-mono text-yellow-400/80 uppercase tracking-wider">Token Intelligence</span>
+        {data.security.isOpenSource != null && (
+          <span className={cn(
+            "ml-auto text-[10px] font-mono px-2 py-0.5 rounded border",
+            data.security.isOpenSource
+              ? "border-success/30 text-success bg-success/5"
+              : "border-yellow-400/30 text-yellow-400 bg-yellow-400/5",
+          )}>
+            {data.security.isOpenSource ? "✓ Contract Verified" : "⚠ Unverified Bytecode"}
+          </span>
+        )}
+      </div>
+
       {/* Header */}
       <div className="flex flex-wrap items-center gap-3">
         {data.imageUrl && (
@@ -197,8 +223,9 @@ export function TokenScanResults({ data, riskScore, summary, insights, risks, op
             { label: "Market Cap", value: fmtUsd(data.marketCapUsd, true),                   sourceKey: "marketCap" },
             { label: "FDV",        value: fmtUsd(data.fdvUsd, true),                         sourceKey: "fdvUsd" },
             { label: "Liquidity",  value: fmtUsd(data.liquidityUsd, true),                   sourceKey: "liquidityUsd" },
-            { label: "24h Volume", value: fmtUsd(data.volumeH24, true),                      sourceKey: "volumeH24" },
-            { label: "Holders",    value: data.holderCount?.toLocaleString() ?? "—",         sourceKey: "holderCount" },
+            { label: "24h Volume",    value: fmtUsd(data.volumeH24, true),                      sourceKey: "volumeH24" },
+            { label: "Holders",       value: data.holderCount?.toLocaleString() ?? "—",         sourceKey: "holderCount" },
+            { label: "Total Supply",  value: formatSupply(data.totalSupply),                     sourceKey: "totalSupply" },
           ].map(({ label, value, sourceKey }) => (
             <Card key={label} className="bg-card/50 border-border/40">
               <CardContent className="p-3">

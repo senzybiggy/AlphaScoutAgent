@@ -32,12 +32,20 @@ const TYPE_META: Record<string, { icon: React.ElementType; color: string; bg: st
   unknown:  { icon: HelpCircle, color: "text-muted-foreground", bg: "bg-muted/30 border-border/30"              },
 };
 
+const ASYNC_TYPE_LABELS: Record<string, string> = {
+  token:    "ERC-20 Token",
+  contract: "Smart Contract",
+  wallet:   "EVM Wallet",
+};
+
 const EXAMPLES = [
   "0x742d35Cc6634C0532925a3b844Bc9e7595f6E123",
   "vitalik.eth",
   "uniswap.org",
   "Aave",
 ];
+
+const EVM_RE = /^0x[0-9a-fA-F]{40}$/;
 
 /** Shorten long addresses for display only */
 function shortAddr(addr: string) {
@@ -46,6 +54,12 @@ function shortAddr(addr: string) {
 }
 
 type InputMode = "connected" | "manual";
+
+interface AsyncDetection {
+  type: string;
+  label: string;
+  confidence: string;
+}
 
 export function SmartInput({
   onSubmit,
@@ -62,6 +76,11 @@ export function SmartInput({
   const [value, setValue] = useState(connectedAddress ?? "");
   const [detection, setDetection] = useState<DetectionResult | null>(null);
   const [focused, setFocused] = useState(false);
+
+  // Async entity type detection for EVM addresses
+  const [asyncDetection, setAsyncDetection] = useState<AsyncDetection | null>(null);
+  const [asyncDetecting, setAsyncDetecting] = useState(false);
+  const asyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const prevAddress = useRef(connectedAddress);
 
@@ -89,7 +108,7 @@ export function SmartInput({
     }
   };
 
-  // Detect input type on every keystroke
+  // Sync detection on every keystroke
   useEffect(() => {
     if (value.trim().length > 2) {
       setDetection(detectInputType(value));
@@ -98,15 +117,68 @@ export function SmartInput({
     }
   }, [value]);
 
-  const meta = detection ? TYPE_META[detection.type] : null;
-  const Icon = meta?.icon ?? Search;
+  // Async entity type detection — fires 600ms after the user stops typing an EVM address
+  useEffect(() => {
+    if (asyncTimerRef.current) clearTimeout(asyncTimerRef.current);
+
+    const v = value.trim();
+    if (!EVM_RE.test(v)) {
+      setAsyncDetection(null);
+      setAsyncDetecting(false);
+      return;
+    }
+
+    // Show a "detecting..." pulse while we wait
+    setAsyncDetecting(true);
+    asyncTimerRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `/api/analyze/detect-type?address=${encodeURIComponent(v)}`,
+        );
+        if (res.ok) {
+          const data = (await res.json()) as { type: string; confidence: string };
+          setAsyncDetection({
+            type:  data.type,
+            label: ASYNC_TYPE_LABELS[data.type] ?? "EVM Address",
+            confidence: data.confidence,
+          });
+        }
+      } catch {
+        // Network error — fall back silently to sync detection
+      } finally {
+        setAsyncDetecting(false);
+      }
+    }, 600);
+
+    return () => {
+      if (asyncTimerRef.current) clearTimeout(asyncTimerRef.current);
+    };
+  }, [value]);
+
+  // Effective detection: prefer async result (server-verified) over sync heuristic
+  const effectiveType  = asyncDetection?.type  ?? detection?.type;
+  const effectiveLabel = asyncDetection?.label ?? detection?.label;
+  const effectiveMeta  = effectiveType ? TYPE_META[effectiveType] : null;
+  const Icon           = effectiveMeta?.icon ?? Search;
+
+  /** Merge async result into a DetectionResult for the submit handler */
+  function buildDetection(): DetectionResult {
+    const sync = detectInputType(value.trim());
+    if (asyncDetection && asyncDetection.type !== sync.type) {
+      return {
+        ...sync,
+        type:  asyncDetection.type as DetectionResult["type"],
+        label: asyncDetection.label,
+      };
+    }
+    return sync;
+  }
 
   /** Submit whatever is in the text field */
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!value.trim() || isLoading) return;
-    const det = detectInputType(value.trim());
-    onSubmit(value.trim(), det);
+    onSubmit(value.trim(), buildDetection());
   };
 
   /** "Scan Connected Wallet" quick action — bypasses text field */
@@ -122,6 +194,12 @@ export function SmartInput({
   };
 
   const isWalletConnected = Boolean(connectedAddress);
+
+  // Whether to show a detection badge in the input
+  const showBadge =
+    asyncDetecting ||
+    (asyncDetection && asyncDetection.type !== "unknown") ||
+    (detection && detection.type !== "unknown");
 
   return (
     <div className="space-y-4">
@@ -229,7 +307,7 @@ export function SmartInput({
             <Icon
               className={cn(
                 "h-5 w-5 transition-colors duration-200",
-                meta ? meta.color : "text-muted-foreground",
+                effectiveMeta ? effectiveMeta.color : "text-muted-foreground",
               )}
             />
           </div>
@@ -254,19 +332,34 @@ export function SmartInput({
             spellCheck={false}
           />
 
-          {/* Detection badge */}
-          {detection && detection.type !== "unknown" && (
+          {/* Detection badge — sync result immediately; async result replaces it */}
+          {showBadge && (
             <div
               className={cn(
                 "hidden sm:flex items-center gap-1.5 text-xs font-mono px-2.5 py-1 rounded-md border mr-3 flex-shrink-0 transition-all duration-300",
-                meta?.bg,
-                meta?.color,
+                asyncDetecting
+                  ? "bg-muted/30 border-border/30 text-muted-foreground"
+                  : effectiveMeta
+                    ? `${effectiveMeta.bg} ${effectiveMeta.color}`
+                    : "bg-muted/30 border-border/30 text-muted-foreground",
               )}
               data-testid="detection-badge"
             >
-              {detection.label}
-              {detection.chain && (
-                <span className="opacity-60">· {detection.chain}</span>
+              {asyncDetecting ? (
+                <>
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  Identifying…
+                </>
+              ) : (
+                <>
+                  {effectiveLabel}
+                  {detection?.chain && (
+                    <span className="opacity-60">· {detection.chain}</span>
+                  )}
+                  {asyncDetection && asyncDetection.confidence === "high" && (
+                    <span className="opacity-40">✓</span>
+                  )}
+                </>
               )}
             </div>
           )}
@@ -301,7 +394,7 @@ export function SmartInput({
             onClick={() => handleExample(ex)}
             className="font-mono px-2 py-0.5 rounded border border-border/30 hover:border-primary/40 hover:text-primary transition-colors duration-150 truncate max-w-[180px]"
           >
-            {ex}
+            {shortAddr(ex)}
           </button>
         ))}
       </div>
