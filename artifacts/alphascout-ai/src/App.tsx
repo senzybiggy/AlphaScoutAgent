@@ -17,6 +17,9 @@ import { Watchlist } from "./pages/watchlist";
 import { Alerts } from "./pages/alerts";
 import { ShareView } from "./pages/share";
 import { Dashboard } from "./pages/dashboard";
+import { SmartMoney } from "./pages/smart-money";
+import { WhaleTracker } from "./pages/whale-tracker";
+import { RugPullDetector } from "./pages/rug-pull";
 
 // Components
 import { Navbar } from "./components/layout/navbar";
@@ -48,6 +51,9 @@ function Router() {
           <Route path="/chat" component={Chat} />
           <Route path="/agents" component={Agents} />
           <Route path="/history" component={History} />
+          <Route path="/smart-money" component={SmartMoney} />
+          <Route path="/whale-tracker" component={WhaleTracker} />
+          <Route path="/rug-pull" component={RugPullDetector} />
           <Route path="/share/:token" component={ShareView} />
           <Route component={NotFound} />
         </Switch>
