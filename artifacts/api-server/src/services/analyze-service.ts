@@ -3,7 +3,7 @@
  * and the versioned /api/v1/analyze/* endpoints.
  *
  * Orchestrates:
- *   1. Real on-chain data fetch (GoPlus, DexScreener, Moralis, Blockstream)
+ *   1. Real on-chain data fetch (GoPlus, DexScreener, Moralis/Ankr/RPC, Blockstream, Solana, web-fetch)
  *   2. AI call with enriched prompt
  *   3. JSON parse + validation
  *   4. Post-processing (attaches scan data to output)
@@ -13,11 +13,14 @@
 import { callAI } from "@workspace/integrations-anthropic-ai";
 import { db, scanHistory } from "@workspace/db";
 import { logger } from "../lib/logger.js";
-import type { AnalyzerInput, AnalyzerOutput, AnalyzerSection, WalletScanData, TokenScanData, ContractScanData } from "../routes/analyze/types.js";
+import type {
+  AnalyzerInput, AnalyzerOutput, AnalyzerSection,
+  WalletScanData, TokenScanData, ContractScanData, ProjectScanData,
+} from "../routes/analyze/types.js";
 import { walletAnalyzer } from "../routes/analyze/wallet.js";
 import { tokenAnalyzer } from "../routes/analyze/token.js";
 import { contractAnalyzer } from "../routes/analyze/contract.js";
-import { projectAnalyzer } from "../routes/analyze/project.js";
+import { projectAnalyzer, fetchProjectScanData } from "../routes/analyze/project.js";
 import { scanWallet } from "./wallet-scanner.js";
 import { scanToken } from "./token-scanner.js";
 import { checkTokenSecurity } from "./goplus.js";
@@ -35,7 +38,11 @@ export interface AnalysisResult {
   walletScan: WalletScanData | null;
   tokenScan: TokenScanData | null;
   contractScan: ContractScanData | null;
+  projectScan: ProjectScanData | null;
   recommendations: string[];
+  risks: string[];
+  opportunities: string[];
+  confidenceScore: number | null;
   smartMoneyScore: number | null;
   walletHealthScore: number | null;
 }
@@ -93,19 +100,32 @@ export function parseAiOutput(text: string): AnalyzerOutput {
       }))
     : [];
 
-  const insights = Array.isArray(raw.insights) ? (raw.insights as unknown[]).map(String) : [];
+  const insights = Array.isArray(raw.insights)
+    ? (raw.insights as unknown[]).map(String)
+    : (Array.isArray(raw.keyFindings) ? (raw.keyFindings as unknown[]).map(String) : []);
+
   const sections = parseSections(raw.sections);
+
   const recommendations = Array.isArray(raw.recommendations)
     ? (raw.recommendations as unknown[]).map(String)
     : undefined;
 
+  const risks = Array.isArray(raw.risks) ? (raw.risks as unknown[]).map(String) : undefined;
+  const opportunities = Array.isArray(raw.opportunities) ? (raw.opportunities as unknown[]).map(String) : undefined;
+  const confidenceScore = typeof raw.confidenceScore === "number"
+    ? Math.min(100, Math.max(0, Math.round(raw.confidenceScore)))
+    : undefined;
+
   const output: AnalyzerOutput & Record<string, unknown> = {
-    summary: String(raw.summary ?? "No summary available."),
+    summary: String(raw.executiveSummary ?? raw.summary ?? "No summary available."),
     riskScore: Math.min(100, Math.max(0, Math.round(riskScore))),
     metrics,
     insights,
     sections,
     recommendations,
+    risks,
+    opportunities,
+    confidenceScore,
   };
   for (const [k, v] of Object.entries(raw)) {
     if (!(k in output)) (output as Record<string, unknown>)[k] = v;
@@ -117,7 +137,7 @@ export function parseAiOutput(text: string): AnalyzerOutput {
 
 export async function fetchScanData(
   input: AnalyzerInput,
-): Promise<WalletScanData | TokenScanData | ContractScanData | undefined> {
+): Promise<WalletScanData | TokenScanData | ContractScanData | ProjectScanData | undefined> {
   try {
     if (input.type === "wallet") return await scanWallet(input.target, input.chain ?? null);
     if (input.type === "token")  return await scanToken(input.target, input.chain ?? null);
@@ -134,6 +154,9 @@ export async function fetchScanData(
         holderCount: sec.holderCount,
         recommendations: [],
       } satisfies ContractScanData;
+    }
+    if (input.type === "project") {
+      return await fetchProjectScanData(input);
     }
   } catch (err) {
     logger.warn({ err, type: input.type }, "fetchScanData failed — continuing without real data");
@@ -176,12 +199,16 @@ export async function analyzeTarget(input: AnalyzerInput): Promise<AnalysisResul
     walletScan:        parsed.walletScan        ?? null,
     tokenScan:         parsed.tokenScan         ?? null,
     contractScan:      parsed.contractScan      ?? null,
+    projectScan:       parsed.projectScan       ?? (input.type === "project" ? (scanData as ProjectScanData | undefined) ?? null : null),
     recommendations:   parsed.recommendations   ?? [],
+    risks:             parsed.risks             ?? [],
+    opportunities:     parsed.opportunities     ?? [],
+    confidenceScore:   parsed.confidenceScore   ?? null,
     smartMoneyScore:   parsed.smartMoneyScore    ?? null,
     walletHealthScore: parsed.walletHealthScore  ?? null,
   };
 
-  // Step 6: Persist to history (non-blocking, fire-and-forget)
+  // Step 6: Persist to history (non-blocking)
   db.insert(scanHistory)
     .values({
       target: input.target,

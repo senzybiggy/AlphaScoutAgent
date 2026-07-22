@@ -1,73 +1,67 @@
 ---
 name: AlphaScout AI Stack
-description: Core decisions for the AlphaScout AI blockchain intelligence platform (OKX hackathon) — including ASP layer.
+description: Core stack decisions, data sources, UI architecture, and feature map for the AlphaScout AI crypto intelligence platform.
 ---
 
-## AI Provider
-OpenRouter detected by `sk-or-v1-` key prefix in `lib/integrations-anthropic-ai/src/client.ts`. Uses `fetch` + `/chat/completions` (OpenAI format). Model: `nvidia/nemotron-3-super-120b-a12b:free`.
+## Stack
+- **Frontend**: React + Vite + Tailwind + shadcn/ui + recharts, path `/alphascout-ai`
+- **Backend**: Express + TypeScript, path `/api-server`, port 8080
+- **DB**: Drizzle ORM + PostgreSQL, schema in `lib/db/src/schema/`
+- **AI**: OpenRouter via `sk-or-v1-` prefix in ANTHROPIC_API_KEY → `callAI()` from `@workspace/integrations-anthropic-ai`
+- **Routing**: wouter (frontend), base path from `import.meta.env.BASE_URL`
 
-**Why:** Anthropic SDK doesn't support OpenRouter; the key prefix detection allows both providers to coexist.
+## Free Data Sources (no key required)
+- **Ankr Advanced API**: `ankr_getAccountBalance`, `ankr_getNFTsByOwner`, `ankr_getTransactionsByAddress` in `services/ankr.ts`
+- **Public RPC**: 7 EVM chains in `services/rpc-provider.ts` + Solana in `services/solana-scanner.ts`
+- **GoPlus Security**: token + contract + phishing checks in `services/goplus.ts`
+- **DexScreener**: token market data in `services/dexscreener.ts`
+- **CoinGecko free**: metadata in `services/coingecko.ts`
+- **Blockstream**: Bitcoin UTXOs in `services/blockstream.ts`
+- **URL fetcher**: live page text for project scans in `services/project-fetcher.ts`
 
-## Real Data Layer (no hallucination principle)
-All analyzers fetch real data FIRST, then pass it to AI as context. The core logic lives in `services/analyze-service.ts` and is shared by both the legacy route and v1 endpoints.
+## AI Output Format (all 4 analyzers)
+JSON with: `executiveSummary`, `keyFindings[]`, `risks[]`, `opportunities[]`, `recommendations[]`, `confidenceScore`, `riskScore`, `metrics[]`, `sections[]`
+Mapped in `postProcess` → legacy `summary`/`insights` fields for UI backward compat.
 
-**Services:**
-- `services/analyze-service.ts` — extracted orchestrator: fetchScanData + callAI + parseAiOutput + save to history. Used by both legacy /api/analyze and /api/v1/analyze/*.
-- `services/goplus.ts` — free, no key. Token security + wallet risk labels.
-- `services/dexscreener.ts` — free, no key. Token market data.
-- `services/moralis.ts` — requires MORALIS_API_KEY. EVM wallet data.
-- `services/blockstream.ts` — free, no key. Bitcoin wallet data.
-- `services/cache.ts` — in-memory TTL cache.
-- `services/wallet-scanner.ts` / `services/token-scanner.ts` — orchestrators.
+## Feature Map (pages + routes)
+| Route | Page | Notes |
+|-------|------|-------|
+| `/` | Home/Terminal | entry point |
+| `/analyze` | Analyze | scan any address/URL/token |
+| `/portfolio` | Portfolio | recharts charts, multi-chain wallet dashboard |
+| `/watchlist` | Watchlist | localStorage-backed saved items |
+| `/alerts` | Alerts | localStorage + 5min polling via analyze endpoint |
+| `/history` | History | DB-backed scan history (scan_history table) |
+| `/agents` | Agents | OKX ASP agent listing |
+| `/chat` | Chat/Comm Link | conversation AI |
+| `/share/:token` | ShareView | read-only public report view |
 
-## OKX AI Agent Service Provider (ASP) Layer
+## Backend API Routes
+- `POST /api/analyze` — main analysis (wallet/token/contract/project)
+- `POST /api/analyze/chat` — multi-turn AI copilot (passes `history` array)
+- `GET /api/analyze/history` + `/:id` — scan history
+- `POST /api/share` → `{ token, expiresAt }` — create 30-day shareable link
+- `GET /api/share/:token` → `{ result, createdAt }` — retrieve shared report
 
-### ASP Endpoints (all under /api/agent/)
-- `GET  /api/agent/health`    — uptime, agent counts, rate-limit config
-- `GET  /api/agent/manifest`  — full OKX registration manifest (agents, skills, data sources, auth mode)
-- `GET  /api/agent/card`      — A2A/OKX AI discovery card (10 skills across 6 agents)
-- `GET  /api/agent/agents`    — agent directory
-- `GET  /api/agent/agents/:id`— single agent detail
-- `POST /api/agent/run`       — AI-powered skill execution (fast, no real chain data)
+## DB Schema Tables
+- `scan_history` — all analysis results (jsonb result blob)
+- `shared_reports` — share tokens with 30-day expiry (token unique index)
+- `conversations`, `messages` — AI chat (legacy Comm Link)
 
-### 6 Agents
-wallet-scout (active), token-sentinel (active), contract-auditor (active), alpha-hunter (active), project-analyst (active), okx-chain-scout (beta)
+## Key Frontend Components
+- `analysis-results.tsx` — main result dispatcher, accepts `readOnly` prop for share view
+- `confidence-panel.tsx` — shows confidence %, data freshness, sources, timestamp
+- `share-button.tsx` — POST /api/share → copy shareable URL
+- `watchlist-button.tsx` — toggles localStorage watchlist entry
+- `export-panel.tsx` — Markdown/JSON download + PDF (window.print) + Share button
+- `ai-copilot-panel.tsx` — multi-turn chat (sends `history[]` to backend)
 
-### Versioned Typed Endpoints (/api/v1/)
-- `POST /api/v1/analyze/wallet`   — real on-chain data + AI (uses analyze-service.ts)
-- `POST /api/v1/analyze/token`    — DexScreener + GoPlus + AI
-- `POST /api/v1/analyze/contract` — GoPlus + AI
-- `POST /api/v1/analyze/project`  — AI-only
-- Response shape: `{ success, apiVersion: "v1", data: AnalysisResult }`
+## Wallet Chain Priority
+EVM order: Moralis (if key) → Ankr free API → Public JSON-RPC → limited
+Solana: `detectAddressType()` in wallet-scanner.ts → routes base58 to solana-scanner.ts
+Bitcoin: Blockstream public API
 
-### OpenAPI Docs
-- `GET /api/docs`    — OpenAPI 3.1 JSON spec (15 paths, 5 tags)
-- `GET /api/docs/ui` — Swagger UI (CDN-hosted, dark-themed)
+**Why:** MORALIS_API_KEY not set in env; Ankr provides rich EVM data free; Solana addresses are base58.
 
-## Middleware Stack (app.ts)
-Order: pinoHttp → headersMiddleware → cors → json/urlencoded → globalLimiter → authMiddleware → router
-
-- `middlewares/auth.ts` — X-API-Key or Bearer token. Open mode when API_KEYS env var unset. Bypass for /healthz, /agent/health, /manifest, /card, /docs.
-- `middlewares/rate-limit.ts` — express-rate-limit: global (200/15min), analysis (10/min), agent-run (15/min). Shared singleton imported by both legacy and v1 routes.
-- `middlewares/headers.ts` — X-API-Version: 1.0.0, X-Powered-By, Access-Control-Expose-Headers
-
-**Critical:** rate-limit uses singleton instances from rate-limit.ts. Both /api/analyze and /api/v1/analyze/* share the same `analysisLimiter` instance (intentional — same quota).
-
-## Deployment
-- `render.yaml` at monorepo root (Render reads from repo root).
-- Build: `pnpm install --frozen-lockfile && pnpm --filter @workspace/api-server run build`
-- Start: `pnpm --filter @workspace/api-server run start`
-- Required env: PORT (auto-set by Render=10000), DATABASE_URL, ANTHROPIC_API_KEY
-- Optional: PUBLIC_URL, MORALIS_API_KEY, API_KEYS, RATE_LIMIT_* overrides
-
-## DB Schema
-`lib/db/src/schema/scan-history.ts` — `scan_history` table. Migrated.
-
-## Frontend Type Strategy
-Cast result to `RichAnalyzeResult` from `@/lib/scan-types`. Never run codegen for these fields.
-
-## Wallet Connect
-`@reown/appkit` + `wagmi@3.7.3`. VITE_WALLETCONNECT_PROJECT_ID needed from cloud.reown.com.
-
-## Moralis Graceful Degradation
-When MORALIS_API_KEY absent, walletScan.dataSource = "limited". Frontend shows yellow banner.
+## X-API-Version
+Hardcoded to `"1.0.0"` in `middlewares/headers.ts` (was reading from npm_package_version which returned "0.0.0").

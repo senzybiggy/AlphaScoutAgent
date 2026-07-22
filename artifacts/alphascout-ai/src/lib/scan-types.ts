@@ -26,6 +26,8 @@ export interface WalletScanData {
   txCount: number; firstTxDate: string | null; lastTxDate: string | null;
   walletAgeDays: number | null; totalGasSpentNative: string | null;
   chainsUsed: string[]; walletLabels: string[];
+  isContract?: boolean; stablecoinUsd?: number;
+  multiChainBalances?: { chain: string; formatted: string; symbol: string }[];
   tokens: WalletToken[]; nfts: WalletNFT[]; defiPositions: DeFiPosition[];
   recentTransactions: WalletTx[];
   topContracts: { address: string; label: string | null; txCount: number }[];
@@ -39,7 +41,11 @@ export interface TokenSecurity {
   hasHiddenOwner: boolean | null; ownerCanTakeBack: boolean | null;
   cannotSellAll: boolean | null; transferPausable: boolean | null;
   isProxy: boolean | null; hasSelfDestruct: boolean | null;
+  hasExternalCalls: boolean | null; isAntiWhale: boolean | null;
   ownerAddress: string | null; creatorAddress: string | null;
+  creatorHoldPct: string | null; ownerHoldPct: string | null;
+  lpHolderCount: number | null; lpTopHolderPct: string | null;
+  isInDex: boolean | null;
   overallRisk: "low" | "medium" | "high" | "critical" | "unknown";
 }
 export interface TokenScanData {
@@ -55,11 +61,24 @@ export interface TokenScanData {
   pairCreatedAt: string | null; imageUrl: string | null;
   websites: string[]; socials: { type: string; url: string }[];
   security: TokenSecurity; recommendations: string[];
+  // CoinGecko enrichment
+  cgDescription: string | null; cgCategories: string[];
+  cgCommunity: { twitterFollowers: number | null; redditSubscribers: number | null; telegramSize: number | null; communityScore: number | null; liquidityScore: number | null } | null;
+  cgAthUsd: number | null; cgAthChangePercent: number | null;
+  cgGenesisDate: string | null; cgGithubUrls: string[];
 }
 export interface ContractScanData {
   dataSource: string; fetchedAt: string; chainId: string | null;
   security: TokenSecurity; ownerAddress: string | null;
   totalSupply: string | null; holderCount: number | null; recommendations: string[];
+}
+export interface ProjectScanData {
+  dataSource: string; fetchedAt: string; url: string | null;
+  title: string | null; description: string | null; bodyPreview: string | null;
+  socials: { platform: string; url: string }[];
+  tokenMentions: string[]; keywords: string[];
+  hasWhitepaper: boolean; hasAudit: boolean;
+  isPhishingSite: boolean; fetchError: string | null;
 }
 export interface RichAnalyzeResult {
   target: string; type: string; chain: string | null;
@@ -70,7 +89,12 @@ export interface RichAnalyzeResult {
   walletScan: WalletScanData | null;
   tokenScan: TokenScanData | null;
   contractScan: ContractScanData | null;
-  recommendations: string[]; smartMoneyScore: number | null; walletHealthScore: number | null;
+  projectScan: ProjectScanData | null;
+  recommendations: string[];
+  risks: string[];
+  opportunities: string[];
+  confidenceScore: number | null;
+  smartMoneyScore: number | null; walletHealthScore: number | null;
 }
 
 export function fmtUsd(n: number | null | undefined, compact = false): string {

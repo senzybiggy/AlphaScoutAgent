@@ -69,7 +69,7 @@ export interface DeFiPosition {
 
 export interface WalletScanData {
   chain: string;
-  dataSource: "moralis" | "blockstream" | "limited";
+  dataSource: "moralis" | "blockstream" | "limited" | "ankr" | "solana-rpc" | "rpc";
   fetchedAt: string;
   nativeBalance: string;
   nativeSymbol: string;
@@ -97,6 +97,9 @@ export interface WalletScanData {
   isSanctioned: boolean;
   isMixer: boolean;
   isScammer: boolean;
+  isContract?: boolean;
+  stablecoinUsd?: number;
+  multiChainBalances?: { chain: string; formatted: string; symbol: string }[];
   smartMoneyScore: number | null;
   walletHealthScore: number | null;
   recommendations: string[];
@@ -117,8 +120,15 @@ export interface TokenSecurity {
   transferPausable: boolean | null;
   isProxy: boolean | null;
   hasSelfDestruct: boolean | null;
+  hasExternalCalls: boolean | null;
+  isAntiWhale: boolean | null;
   ownerAddress: string | null;
   creatorAddress: string | null;
+  creatorHoldPct: string | null;
+  ownerHoldPct: string | null;
+  lpHolderCount: number | null;
+  lpTopHolderPct: string | null;
+  isInDex: boolean | null;
   overallRisk: "low" | "medium" | "high" | "critical" | "unknown";
 }
 
@@ -148,6 +158,20 @@ export interface TokenScanData {
   socials: { type: string; url: string }[];
   security: TokenSecurity;
   recommendations: string[];
+  // CoinGecko enrichment
+  cgDescription: string | null;
+  cgCategories: string[];
+  cgCommunity: {
+    twitterFollowers: number | null;
+    redditSubscribers: number | null;
+    telegramSize: number | null;
+    communityScore: number | null;
+    liquidityScore: number | null;
+  } | null;
+  cgAthUsd: number | null;
+  cgAthChangePercent: number | null;
+  cgGenesisDate: string | null;
+  cgGithubUrls: string[];
 }
 
 // ── Contract scan types ──────────────────────────────────────────────────────
@@ -163,6 +187,24 @@ export interface ContractScanData {
   recommendations: string[];
 }
 
+// ── Project scan types ───────────────────────────────────────────────────────
+
+export interface ProjectScanData {
+  dataSource: string;
+  fetchedAt: string;
+  url: string | null;
+  title: string | null;
+  description: string | null;
+  bodyPreview: string | null;
+  socials: { platform: string; url: string }[];
+  tokenMentions: string[];
+  keywords: string[];
+  hasWhitepaper: boolean;
+  hasAudit: boolean;
+  isPhishingSite: boolean;
+  fetchError: string | null;
+}
+
 // ── Analyzer output ──────────────────────────────────────────────────────────
 
 export interface AnalyzerOutput {
@@ -171,10 +213,15 @@ export interface AnalyzerOutput {
   metrics: AnalyzerMetric[];
   insights: string[];
   sections: AnalyzerSection[];
+  // Structured intelligence fields (new)
+  risks?: string[];
+  opportunities?: string[];
+  confidenceScore?: number;
   // Extended rich scan data
   walletScan?: WalletScanData;
   tokenScan?: TokenScanData;
   contractScan?: ContractScanData;
+  projectScan?: ProjectScanData;
   recommendations?: string[];
   smartMoneyScore?: number;
   walletHealthScore?: number;

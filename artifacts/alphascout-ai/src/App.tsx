@@ -12,6 +12,10 @@ import { Analyze } from "./pages/analyze";
 import { Chat } from "./pages/chat";
 import { Agents } from "./pages/agents";
 import { History } from "./pages/history";
+import { Portfolio } from "./pages/portfolio";
+import { Watchlist } from "./pages/watchlist";
+import { Alerts } from "./pages/alerts";
+import { ShareView } from "./pages/share";
 
 // Components
 import { Navbar } from "./components/layout/navbar";
@@ -36,9 +40,13 @@ function Router() {
         <Switch>
           <Route path="/" component={Home} />
           <Route path="/analyze" component={Analyze} />
+          <Route path="/portfolio" component={Portfolio} />
+          <Route path="/watchlist" component={Watchlist} />
+          <Route path="/alerts" component={Alerts} />
           <Route path="/chat" component={Chat} />
           <Route path="/agents" component={Agents} />
           <Route path="/history" component={History} />
+          <Route path="/share/:token" component={ShareView} />
           <Route component={NotFound} />
         </Switch>
       </main>
@@ -51,7 +59,6 @@ function App() {
     document.documentElement.classList.add("dark");
   }, []);
 
-  // Reown-recommended hierarchy: WagmiProvider → QueryClientProvider → rest of app
   return (
     <WagmiProvider config={wagmiAdapter.wagmiConfig}>
       <QueryClientProvider client={queryClient}>

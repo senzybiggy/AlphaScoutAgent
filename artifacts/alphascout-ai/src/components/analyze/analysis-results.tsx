@@ -6,6 +6,8 @@ import { TokenScanResults } from "./token-scan-results";
 import { ContractScanResults } from "./contract-scan-results";
 import { AICopilotPanel } from "./ai-copilot-panel";
 import { ExportPanel } from "./export-panel";
+import { ConfidencePanel } from "./confidence-panel";
+import { WatchlistButton } from "./watchlist-button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, TrendingDown, Minus, Activity, ShieldAlert, Cpu } from "lucide-react";
@@ -13,6 +15,7 @@ import { format } from "date-fns";
 
 interface AnalysisResultsProps {
   result: AnalyzeResult;
+  readOnly?: boolean;
 }
 
 const INSIGHTS_LABEL: Record<string, string> = {
@@ -29,7 +32,7 @@ function TrendIcon({ trend }: { trend: string | null | undefined }) {
   return null;
 }
 
-/** Build a trimmed context string for the AI copilot (no huge image URLs or huge arrays). */
+/** Build a trimmed context string for the AI copilot. */
 function buildCopilotContext(r: RichAnalyzeResult): string {
   const trimmed: Record<string, unknown> = {
     target: r.target,
@@ -37,7 +40,10 @@ function buildCopilotContext(r: RichAnalyzeResult): string {
     chain: r.chain,
     summary: r.summary,
     riskScore: r.riskScore,
+    confidenceScore: r.confidenceScore,
     insights: r.insights,
+    risks: r.risks,
+    opportunities: r.opportunities,
     recommendations: r.recommendations,
     smartMoneyScore: r.smartMoneyScore,
     walletHealthScore: r.walletHealthScore,
@@ -47,26 +53,19 @@ function buildCopilotContext(r: RichAnalyzeResult): string {
   if (r.walletScan) {
     const w = r.walletScan;
     trimmed.walletScan = {
-      chain: w.chain,
-      dataSource: w.dataSource,
-      nativeBalance: w.nativeBalance,
-      nativeSymbol: w.nativeSymbol,
-      nativeBalanceUsd: w.nativeBalanceUsd,
-      totalNetWorthUsd: w.totalNetWorthUsd,
-      txCount: w.txCount,
-      walletAgeDays: w.walletAgeDays,
-      firstTxDate: w.firstTxDate,
-      lastTxDate: w.lastTxDate,
-      chainsUsed: w.chainsUsed,
-      walletLabels: w.walletLabels,
+      chain: w.chain, dataSource: w.dataSource,
+      nativeBalance: w.nativeBalance, nativeSymbol: w.nativeSymbol,
+      nativeBalanceUsd: w.nativeBalanceUsd, totalNetWorthUsd: w.totalNetWorthUsd,
+      stablecoinUsd: w.stablecoinUsd, isContract: w.isContract,
+      txCount: w.txCount, walletAgeDays: w.walletAgeDays,
+      firstTxDate: w.firstTxDate, lastTxDate: w.lastTxDate,
+      chainsUsed: w.chainsUsed, walletLabels: w.walletLabels,
       addressRiskLabels: w.addressRiskLabels,
-      isSanctioned: w.isSanctioned,
-      isMixer: w.isMixer,
-      isScammer: w.isScammer,
-      smartMoneyScore: w.smartMoneyScore,
-      walletHealthScore: w.walletHealthScore,
+      isSanctioned: w.isSanctioned, isMixer: w.isMixer, isScammer: w.isScammer,
+      smartMoneyScore: w.smartMoneyScore, walletHealthScore: w.walletHealthScore,
       recommendations: w.recommendations,
       totalGasSpentNative: w.totalGasSpentNative,
+      multiChainBalances: w.multiChainBalances,
       tokens: w.tokens.slice(0, 10).map((t) => ({
         symbol: t.symbol, name: t.name,
         balanceFormatted: t.balanceFormatted,
@@ -92,19 +91,20 @@ function buildCopilotContext(r: RichAnalyzeResult): string {
       liquidityUsd: t.liquidityUsd, volumeH24: t.volumeH24,
       buys24h: t.buys24h, sells24h: t.sells24h, holderCount: t.holderCount,
       security: t.security,
+      cgDescription: t.cgDescription,
+      cgCategories: t.cgCategories,
       topHolders: t.topHolders.slice(0, 5),
       recommendations: t.recommendations,
     };
   }
 
-  if (r.contractScan) {
-    trimmed.contractScan = r.contractScan;
-  }
+  if (r.contractScan) trimmed.contractScan = r.contractScan;
+  if (r.projectScan) trimmed.projectScan = r.projectScan;
 
   return JSON.stringify(trimmed, null, 2);
 }
 
-export function AnalysisResults({ result }: AnalysisResultsProps) {
+export function AnalysisResults({ result, readOnly = false }: AnalysisResultsProps) {
   const rich = result as unknown as RichAnalyzeResult;
   const insightsLabel = INSIGHTS_LABEL[result.type] ?? "AI INSIGHTS & VULNERABILITIES";
 
@@ -119,16 +119,20 @@ export function AnalysisResults({ result }: AnalysisResultsProps) {
   const hasContractScan = Boolean(rich.contractScan);
   const hasRichScan = hasWalletScan || hasTokenScan || hasContractScan;
 
+  // Determine watchlist type
+  const watchlistType = (rich.type === "wallet" || rich.type === "token" || rich.type === "contract")
+    ? rich.type : "wallet";
+
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      {/* Scan header — target + timestamp + export */}
-      <div className="flex flex-wrap items-center gap-3 pb-2 border-b border-border/20">
+    <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      {/* Scan header — target + timestamp + export + watchlist */}
+      <div className="flex flex-wrap items-start gap-3 pb-3 border-b border-border/20">
         <div className="flex-1 min-w-0">
           <p className="text-xs font-mono text-muted-foreground">
             <span className="text-muted-foreground/50">TARGET </span>
             <span className="text-foreground break-all">{result.target}</span>
           </p>
-          <div className="flex items-center gap-2 mt-0.5">
+          <div className="flex items-center gap-2 mt-0.5 flex-wrap">
             <Badge variant="outline" className="font-mono text-xs uppercase bg-primary/5 text-primary border-primary/20">
               {result.type}{result.chain ? ` · ${result.chain}` : ""}
             </Badge>
@@ -138,8 +142,22 @@ export function AnalysisResults({ result }: AnalysisResultsProps) {
             </span>
           </div>
         </div>
-        <ExportPanel result={rich} />
+        {/* Action buttons */}
+        <div className="flex flex-wrap items-center gap-2">
+          {!readOnly && (
+            <WatchlistButton
+              target={rich.target}
+              type={watchlistType as "wallet" | "token" | "contract"}
+              chain={rich.chain}
+              riskScore={rich.riskScore ?? null}
+            />
+          )}
+          <ExportPanel result={rich} />
+        </div>
       </div>
+
+      {/* AI Confidence + data freshness panel */}
+      <ConfidencePanel result={rich} />
 
       {/* Rich type-specific view — wallet / token / contract */}
       {hasWalletScan && rich.walletScan && (
@@ -150,6 +168,9 @@ export function AnalysisResults({ result }: AnalysisResultsProps) {
           walletHealthScore={rich.walletHealthScore ?? null}
           summary={rich.summary}
           insights={rich.insights}
+          risks={rich.risks ?? []}
+          opportunities={rich.opportunities ?? []}
+          confidenceScore={rich.confidenceScore ?? null}
           recommendations={rich.recommendations ?? []}
         />
       )}
@@ -160,6 +181,9 @@ export function AnalysisResults({ result }: AnalysisResultsProps) {
           riskScore={rich.riskScore ?? null}
           summary={rich.summary}
           insights={rich.insights}
+          risks={rich.risks ?? []}
+          opportunities={rich.opportunities ?? []}
+          confidenceScore={rich.confidenceScore ?? null}
           recommendations={rich.recommendations ?? []}
           target={rich.target}
         />
@@ -171,6 +195,9 @@ export function AnalysisResults({ result }: AnalysisResultsProps) {
           riskScore={rich.riskScore ?? null}
           summary={rich.summary}
           insights={rich.insights}
+          risks={rich.risks ?? []}
+          opportunities={rich.opportunities ?? []}
+          confidenceScore={rich.confidenceScore ?? null}
           recommendations={rich.recommendations ?? []}
         />
       )}
@@ -236,30 +263,79 @@ export function AnalysisResults({ result }: AnalysisResultsProps) {
             </div>
           )}
 
-          {result.insights.length > 0 && (
+          {/* Project AI report with risks/opportunities */}
+          {(result.insights.length > 0 || (rich.risks ?? []).length > 0 || (rich.opportunities ?? []).length > 0) && (
             <Card className="bg-card/50 border-border/50 scanline">
               <CardHeader className="pb-3 border-b border-border/20">
                 <CardTitle className="text-sm font-mono flex items-center gap-2">
                   <ShieldAlert className="w-4 h-4 text-primary" />{insightsLabel}
+                  {rich.confidenceScore != null && (
+                    <span className="ml-auto text-xs font-mono text-muted-foreground border border-border/30 rounded px-2 py-0.5 bg-muted/20">
+                      {rich.confidenceScore}% confidence
+                    </span>
+                  )}
                 </CardTitle>
               </CardHeader>
-              <CardContent className="pt-4">
-                <ul className="space-y-3">
-                  {result.insights.map((insight, i) => (
-                    <li key={i} className="flex gap-3 text-sm">
-                      <span className="text-primary mt-0.5 opacity-70">▹</span>
-                      <span className="leading-relaxed">{insight}</span>
-                    </li>
-                  ))}
-                </ul>
+              <CardContent className="pt-4 space-y-4">
+                {result.insights.length > 0 && (
+                  <ul className="space-y-3">
+                    {result.insights.map((insight, i) => (
+                      <li key={i} className="flex gap-3 text-sm">
+                        <span className="text-primary mt-0.5 opacity-70">▹</span>
+                        <span className="leading-relaxed">{insight}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {(rich.risks ?? []).length > 0 && (
+                  <div>
+                    <p className="text-xs font-mono text-destructive/70 uppercase tracking-wider mb-2">Risks</p>
+                    <ul className="space-y-2">
+                      {(rich.risks ?? []).map((r, i) => (
+                        <li key={i} className="flex gap-2 text-sm">
+                          <span className="text-destructive mt-0.5 opacity-70 flex-shrink-0">✕</span>
+                          <span className="leading-relaxed">{r}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {(rich.opportunities ?? []).length > 0 && (
+                  <div>
+                    <p className="text-xs font-mono text-success/70 uppercase tracking-wider mb-2">Opportunities</p>
+                    <ul className="space-y-2">
+                      {(rich.opportunities ?? []).map((o, i) => (
+                        <li key={i} className="flex gap-2 text-sm">
+                          <span className="text-success mt-0.5 opacity-70 flex-shrink-0">✓</span>
+                          <span className="leading-relaxed">{o}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {(rich.recommendations ?? []).length > 0 && (
+                  <div>
+                    <p className="text-xs font-mono text-muted-foreground uppercase tracking-wider mb-2">Recommendations</p>
+                    <ul className="space-y-2">
+                      {(rich.recommendations ?? []).map((r, i) => (
+                        <li key={i} className="flex gap-2 text-sm">
+                          <span className="text-primary mt-0.5 opacity-70 flex-shrink-0">→</span>
+                          <span className="leading-relaxed">{r}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}
         </>
       )}
 
-      {/* AI Copilot — always shown after a successful scan */}
-      <AICopilotPanel context={buildCopilotContext(rich)} target={result.target} />
+      {/* AI Copilot — shown after successful scan, hidden in readOnly shared view */}
+      {!readOnly && (
+        <AICopilotPanel context={buildCopilotContext(rich)} target={result.target} />
+      )}
     </div>
   );
 }

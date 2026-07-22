@@ -20,3 +20,4 @@
 export * from "./conversations";
 export * from "./messages";
 export * from "./scan-history";
+export * from "./shared-reports";

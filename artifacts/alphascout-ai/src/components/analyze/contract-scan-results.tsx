@@ -11,6 +11,9 @@ interface Props {
   riskScore: number | null;
   summary: string;
   insights: string[];
+  risks: string[];
+  opportunities: string[];
+  confidenceScore: number | null;
   recommendations: string[];
 }
 
@@ -63,7 +66,7 @@ const SECURITY_FLAGS = (sec: TokenSecurity): FlagRow[] => [
   { label: "Self-Destruct", value: sec.hasSelfDestruct, dangerous: true, description: "Contract contains self-destruct function — can be wiped by owner." },
 ];
 
-export function ContractScanResults({ data, riskScore, summary, insights, recommendations }: Props) {
+export function ContractScanResults({ data, riskScore, summary, insights, risks, opportunities, confidenceScore, recommendations }: Props) {
   const sec = data.security;
   const RISK_META = {
     low: { label: "LOW RISK", color: "text-success", bg: "bg-success/10 border-success/30" },
@@ -167,18 +170,49 @@ export function ContractScanResults({ data, riskScore, summary, insights, recomm
           <CardHeader className="pb-3 border-b border-border/20">
             <CardTitle className="text-sm font-mono flex items-center gap-2">
               <Shield className="w-4 h-4 text-primary" />AI SECURITY REPORT
+              {confidenceScore != null && (
+                <span className="ml-auto text-xs font-mono text-muted-foreground border border-border/30 rounded px-2 py-0.5 bg-muted/20">
+                  {confidenceScore}% confidence
+                </span>
+              )}
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-4 space-y-4">
             <p className="text-sm leading-relaxed">{summary}</p>
             {insights.length > 0 && (
               <div>
-                <p className="text-xs font-mono text-muted-foreground uppercase tracking-wider mb-2">Security Findings</p>
+                <p className="text-xs font-mono text-muted-foreground uppercase tracking-wider mb-2">Key Findings</p>
                 <ul className="space-y-2">
                   {insights.map((ins, i) => (
                     <li key={i} className="flex gap-2 text-sm">
                       <span className="text-primary mt-0.5 opacity-70 flex-shrink-0">▹</span>
                       <span className="leading-relaxed">{ins}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {risks.length > 0 && (
+              <div>
+                <p className="text-xs font-mono text-destructive/70 uppercase tracking-wider mb-2">Risks</p>
+                <ul className="space-y-2">
+                  {risks.map((r, i) => (
+                    <li key={i} className="flex gap-2 text-sm">
+                      <span className="text-destructive mt-0.5 opacity-70 flex-shrink-0">✕</span>
+                      <span className="leading-relaxed">{r}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {opportunities.length > 0 && (
+              <div>
+                <p className="text-xs font-mono text-success/70 uppercase tracking-wider mb-2">Positive Signals</p>
+                <ul className="space-y-2">
+                  {opportunities.map((o, i) => (
+                    <li key={i} className="flex gap-2 text-sm">
+                      <span className="text-success mt-0.5 opacity-70 flex-shrink-0">✓</span>
+                      <span className="leading-relaxed">{o}</span>
                     </li>
                   ))}
                 </ul>

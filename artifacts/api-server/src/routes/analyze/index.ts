@@ -58,23 +58,38 @@ router.get("/history/:id", async (req, res) => {
 // ── AI Copilot chat ──────────────────────────────────────────────────────────
 
 router.post("/chat", async (req, res) => {
-  const { message, context } = req.body as { message?: string; context?: string };
+  const { message, context, history } = req.body as {
+    message?: string;
+    context?: string;
+    history?: { role: "user" | "assistant"; content: string }[];
+  };
   if (!message?.trim()) { res.status(400).json({ error: "message is required" }); return; }
 
   try {
-    const system = `You are AlphaScout AI Copilot, an expert blockchain analyst.
+    const system = `You are AlphaScout AI Copilot, an expert blockchain analyst and on-chain intelligence engine.
 You have access to the following scan result as context:
 
 ${context ?? "No scan context provided."}
 
-Answer the user's question based ONLY on this context. If data is unavailable, say so.
-Be concise, specific, and cite actual numbers from the scan data when relevant.
-Never make up data not present in the context.`;
+INSTRUCTIONS:
+- Answer based ONLY on this context and the conversation history. If data is unavailable, say so explicitly.
+- Be concise, specific, and cite actual numbers when relevant.
+- Never invent data not present in the context.
+- Use bullet points for lists. Keep answers under 200 words unless the user asks for detail.
+- For risk questions, always reference the riskScore and specific security flags.
+- For wallet questions, reference on-chain metrics like txCount, nativeBalance, walletHealthScore.`;
 
-    const reply = await callAI({
-      system,
-      messages: [{ role: "user", content: message.trim() }],
-    });
+    // Build conversation messages including history
+    const priorMessages: { role: "user" | "assistant"; content: string }[] = (history ?? [])
+      .slice(-10) // last 10 messages for context window efficiency
+      .map((m) => ({ role: m.role, content: m.content }));
+
+    const allMessages = [
+      ...priorMessages,
+      { role: "user" as const, content: message.trim() },
+    ];
+
+    const reply = await callAI({ system, messages: allMessages });
     res.json({ reply: reply.trim() });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);

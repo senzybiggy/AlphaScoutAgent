@@ -23,6 +23,9 @@ interface Props {
   walletHealthScore: number | null;
   summary: string;
   insights: string[];
+  risks: string[];
+  opportunities: string[];
+  confidenceScore: number | null;
   recommendations: string[];
 }
 
@@ -98,7 +101,7 @@ function TokenRow({ token, rank }: { token: WalletToken; rank: number }) {
   );
 }
 
-export function WalletScanResults({ data, riskScore, smartMoneyScore, walletHealthScore, summary, insights, recommendations }: Props) {
+export function WalletScanResults({ data, riskScore, smartMoneyScore, walletHealthScore, summary, insights, risks, opportunities, confidenceScore, recommendations }: Props) {
   // Portfolio pie data
   const topTokens = data.tokens.filter((t) => t.usdValue && t.usdValue > 0).slice(0, 9);
   const otherValue = data.tokens.slice(9).reduce((s, t) => s + (t.usdValue ?? 0), 0);
@@ -434,18 +437,49 @@ export function WalletScanResults({ data, riskScore, smartMoneyScore, walletHeal
           <CardHeader className="pb-3 border-b border-border/20">
             <CardTitle className="text-sm font-mono flex items-center gap-2">
               <Shield className="w-4 h-4 text-primary" />AI INTELLIGENCE REPORT
+              {confidenceScore != null && (
+                <span className="ml-auto text-xs font-mono text-muted-foreground border border-border/30 rounded px-2 py-0.5 bg-muted/20">
+                  {confidenceScore}% confidence
+                </span>
+              )}
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-4 space-y-4">
             <p className="text-sm leading-relaxed">{summary}</p>
             {insights.length > 0 && (
               <div>
-                <p className="text-xs font-mono text-muted-foreground uppercase tracking-wider mb-2">Key Insights</p>
+                <p className="text-xs font-mono text-muted-foreground uppercase tracking-wider mb-2">Key Findings</p>
                 <ul className="space-y-2">
                   {insights.map((ins, i) => (
                     <li key={i} className="flex gap-2 text-sm">
                       <span className="text-primary mt-0.5 opacity-70 flex-shrink-0">▹</span>
                       <span className="leading-relaxed">{ins}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {risks.length > 0 && (
+              <div>
+                <p className="text-xs font-mono text-destructive/70 uppercase tracking-wider mb-2">Risks</p>
+                <ul className="space-y-2">
+                  {risks.map((r, i) => (
+                    <li key={i} className="flex gap-2 text-sm">
+                      <span className="text-destructive mt-0.5 opacity-70 flex-shrink-0">✕</span>
+                      <span className="leading-relaxed">{r}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {opportunities.length > 0 && (
+              <div>
+                <p className="text-xs font-mono text-success/70 uppercase tracking-wider mb-2">Opportunities</p>
+                <ul className="space-y-2">
+                  {opportunities.map((o, i) => (
+                    <li key={i} className="flex gap-2 text-sm">
+                      <span className="text-success mt-0.5 opacity-70 flex-shrink-0">✓</span>
+                      <span className="leading-relaxed">{o}</span>
                     </li>
                   ))}
                 </ul>

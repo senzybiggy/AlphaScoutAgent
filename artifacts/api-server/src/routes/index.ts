@@ -6,6 +6,7 @@ import analyzeRouter  from "./analyze/index.js";
 import agentsRouter   from "./agents.js";
 import v1Router       from "./v1/index.js";
 import openApiRouter  from "./openapi.js";
+import shareRouter    from "./share.js";
 
 const router: IRouter = Router();
 
@@ -25,5 +26,6 @@ router.use("/v1", v1Router);
 router.use("/anthropic/conversations", anthropicRouter);
 router.use("/analyze", analyzeRouter);
 router.use("/agents", agentsRouter);   // UI agent listing
+router.use("/share", shareRouter);
 
 export default router;
