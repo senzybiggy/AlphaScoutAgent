@@ -77,6 +77,7 @@
   "dependencies": {
     "@reown/appkit": "^1.8.22",
     "@reown/appkit-adapter-wagmi": "^1.8.22",
+    "@wagmi/core": "^3.6.3",
     "viem": "^2.55.4",
     "wagmi": "^3.7.3"
   }
