@@ -16,6 +16,7 @@ import { Portfolio } from "./pages/portfolio";
 import { Watchlist } from "./pages/watchlist";
 import { Alerts } from "./pages/alerts";
 import { ShareView } from "./pages/share";
+import { Dashboard } from "./pages/dashboard";
 
 // Components
 import { Navbar } from "./components/layout/navbar";
@@ -39,6 +40,7 @@ function Router() {
       <main className="flex-1">
         <Switch>
           <Route path="/" component={Home} />
+          <Route path="/dashboard" component={Dashboard} />
           <Route path="/analyze" component={Analyze} />
           <Route path="/portfolio" component={Portfolio} />
           <Route path="/watchlist" component={Watchlist} />

@@ -11,13 +11,14 @@ import {
   Bell,
   Menu,
   X,
+  LayoutDashboard,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ConnectWalletButton, WalletStatusPill } from "@/components/wallet/connect-button";
 import { useState, useEffect } from "react";
 
 const NAV_PRIMARY = [
-  { name: "Terminal", path: "/", icon: TerminalSquare },
+  { name: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
   { name: "Analyze", path: "/analyze", icon: Search },
   { name: "Portfolio", path: "/portfolio", icon: BarChart3 },
   { name: "History", path: "/history", icon: Clock },
