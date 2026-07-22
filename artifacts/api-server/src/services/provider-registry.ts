@@ -10,6 +10,8 @@ export interface ProviderAttempt {
   status: "success" | "failed" | "skipped";
   error: string | null;
   latencyMs: number;
+  /** True when this attempt was cut short by a timeout rather than returning bad data. */
+  isTimeout?: boolean;
 }
 
 export interface ProviderResult<T> {
@@ -25,6 +27,12 @@ export interface ProviderDef<T> {
   enabled?: boolean;
   /** Human-readable reason shown in the error log when enabled=false. */
   skipReason?: string;
+  /**
+   * Per-provider timeout in ms. Overrides the category-level default.
+   * Use shorter timeouts for cheap lookups (native balance ~5 s),
+   * longer for security enrichment (~15 s).
+   */
+  timeoutMs?: number;
   fn: () => Promise<T | null | undefined>;
 }
 
@@ -34,14 +42,15 @@ export interface ProviderDef<T> {
  *
  * - A provider returning `null` or `undefined` counts as "no data" and the
  *   next provider is tried.
- * - A provider throwing counts as "failed".
+ * - A provider throwing counts as "failed"; timeout errors are flagged with
+ *   `isTimeout: true` so reliability scoring can weight them differently.
  * - An empty array `[]` counts as a valid (non-null) result so callers can
  *   distinguish "confirmed empty" from "data unavailable".
  */
 export async function runWithFallback<T>(
   category: string,
   providers: ProviderDef<T>[],
-  perProviderTimeout = 12_000,
+  defaultTimeoutMs = 10_000,
 ): Promise<ProviderResult<T>> {
   const attempts: ProviderAttempt[] = [];
 
@@ -54,12 +63,13 @@ export async function runWithFallback<T>(
       continue;
     }
 
+    const timeout = p.timeoutMs ?? defaultTimeoutMs;
     const start = Date.now();
     try {
       const result = await Promise.race([
         p.fn(),
         new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error(`Timeout after ${perProviderTimeout}ms`)), perProviderTimeout),
+          setTimeout(() => reject(new Error(`Timeout after ${timeout}ms`)), timeout),
         ),
       ]);
       const latencyMs = Date.now() - start;
@@ -72,10 +82,11 @@ export async function runWithFallback<T>(
       }
     } catch (err) {
       const latencyMs = Date.now() - start;
+      const msg = err instanceof Error ? err.message.slice(0, 200) : String(err).slice(0, 200);
+      const isTimeout = msg.startsWith("Timeout after");
       attempts.push({
         provider: p.name, category, status: "failed",
-        error: err instanceof Error ? err.message.slice(0, 200) : String(err).slice(0, 200),
-        latencyMs,
+        error: msg, latencyMs, isTimeout,
       });
     }
   }

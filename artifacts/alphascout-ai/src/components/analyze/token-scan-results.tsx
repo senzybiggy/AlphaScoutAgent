@@ -76,7 +76,7 @@ function TaxBadge({ label, value }: { label: string; value: string | null }) {
   );
 }
 
-function SecuritySummary({ sec }: { sec: TokenSecurity }) {
+function SecuritySummary({ sec, sourceLabel }: { sec: TokenSecurity; sourceLabel?: string }) {
   const RISK_LABELS = {
     low: { label: "LOW RISK", className: "text-success bg-success/10 border-success/30" },
     medium: { label: "MEDIUM RISK", className: "text-yellow-400 bg-yellow-400/10 border-yellow-400/30" },
@@ -91,6 +91,7 @@ function SecuritySummary({ sec }: { sec: TokenSecurity }) {
         <CardHeader className="pb-2 border-b border-border/20">
           <CardTitle className="text-sm font-mono flex items-center gap-2">
             <Shield className="h-4 w-4 text-primary" />SECURITY SCAN
+            {sourceLabel && <SourceBadge source={sourceLabel} />}
             <Badge variant="outline" className={cn("ml-auto text-xs font-mono border", risk.className)}>{risk.label}</Badge>
           </CardTitle>
         </CardHeader>
@@ -235,7 +236,7 @@ export function TokenScanResults({ data, riskScore, summary, insights, risks, op
       )}
 
       {/* Security */}
-      <SecuritySummary sec={data.security} />
+      <SecuritySummary sec={data.security} sourceLabel={fieldSources?.honeypotCheck} />
 
       {/* Top holders */}
       {data.topHolders.length > 0 && (
@@ -243,6 +244,7 @@ export function TokenScanResults({ data, riskScore, summary, insights, risks, op
           <CardHeader className="pb-2 border-b border-border/20">
             <CardTitle className="text-sm font-mono flex items-center gap-2">
               <Users className="h-4 w-4 text-primary" />TOP HOLDERS
+              <SourceBadge source={fieldSources?.topHolders} />
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0">

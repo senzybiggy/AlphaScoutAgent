@@ -41,20 +41,32 @@ function computeScores(
   }
 
   // Reliability: freshness + provider success rate + primary provider success
+  // Timeouts are penalised more than clean "no data" failures because they indicate
+  // flaky/slow provider behaviour rather than simply missing data.
   const nonSkipped = attempts.filter((a) => a.status !== "skipped");
   const succeeded  = attempts.filter((a) => a.status === "success");
-  const successRate = nonSkipped.length > 0 ? succeeded.length / nonSkipped.length : 0;
+  const timedOut   = attempts.filter((a) => a.isTimeout);
 
-  const PRIMARY_PROVIDERS = new Set(["Moralis", "GoPlus", "Ankr", "DexScreener", "Blockscout"]);
+  // Each timeout counts as 1.5× a normal failure when computing the success rate
+  const effectiveFailed = (nonSkipped.length - succeeded.length) + timedOut.length * 0.5;
+  const effectiveTotal  = nonSkipped.length + timedOut.length * 0.5;
+  const successRate = effectiveTotal > 0 ? succeeded.length / effectiveTotal : 0;
+
+  const PRIMARY_PROVIDERS = new Set(["GoPlus", "Ankr", "DexScreener", "Blockscout", "CoinGecko"]);
   const primarySuccess = attempts.some((a) => PRIMARY_PROVIDERS.has(a.provider) && a.status === "success");
 
   const ageMs = Date.now() - new Date(fetchedAt).getTime();
   const ageMins = ageMs / 60_000;
   const freshnessScore = ageMins < 5 ? 100 : ageMins < 30 ? 80 : ageMins < 60 ? 60 : 40;
 
+  // Small penalty for each timeout event (over-and-above the success-rate hit)
+  const timeoutPenalty = Math.min(20, timedOut.length * 7);
+
   const reliabilityScore = Math.min(
     100,
-    Math.round((primarySuccess ? 35 : 0) + successRate * 35 + freshnessScore * 0.3),
+    Math.max(0, Math.round(
+      (primarySuccess ? 35 : 0) + successRate * 35 + freshnessScore * 0.3 - timeoutPenalty
+    )),
   );
 
   return { dataQualityScore, reliabilityScore, fieldSources, missingFields };

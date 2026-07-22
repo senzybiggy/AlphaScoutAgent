@@ -56,12 +56,23 @@ Mapped in `postProcess` → legacy `summary`/`insights` fields for UI backward c
 - `export-panel.tsx` — Markdown/JSON download + PDF (window.print) + Share button
 - `ai-copilot-panel.tsx` — multi-turn chat (sends `history[]` to backend)
 
-## Wallet Chain Priority
-EVM order: Moralis (if key) → Ankr free API → Public JSON-RPC → limited
-Solana: `detectAddressType()` in wallet-scanner.ts → routes base58 to solana-scanner.ts
-Bitcoin: Blockstream public API
+## Wallet Chain Priority (free providers only — no premium keys needed)
+EVM: Ankr (rich free API) → Blockscout → Blockchair → Etherscan (ETH only, rate-limited) → Public RPC
+Solana: Solscan (if key) → Solana public RPC
+Bitcoin: Blockstream → Blockchair
+Security (EVM only): GoPlus runs in parallel with primary data fetch — 12 s timeout
 
-**Why:** MORALIS_API_KEY not set in env; Ankr provides rich EVM data free; Solana addresses are base58.
+**Why:** Moralis/Covalent keys deliberately skipped; Ankr + Blockscout give sufficient free coverage.
+
+## Provider Registry (provider-registry.ts)
+- `ProviderAttempt.isTimeout: boolean` — set when error message starts with "Timeout after"
+- `ProviderDef.timeoutMs` — per-provider timeout override (Ankr 6 s, Blockscout/etc 5 s, GoPlus 12 s)
+- Default category timeout reduced from 12 s → 10 s
+- Reliability scoring: timeouts weighted 1.5× vs clean failures + 7-pt penalty each
+
+## Source Badges (SourceBadge component in each scan results file)
+Wallet: Portfolio Value, Native Balance, Wallet Age, Transactions, Token Balances header, DeFi Positions header, NFT Holdings header, Recent Transactions header, Chain Activity
+Token: Price/MarketCap/FDV/Liquidity/Volume/Holders cards, Security Scan header, Top Holders header
 
 ## X-API-Version
 Hardcoded to `"1.0.0"` in `middlewares/headers.ts` (was reading from npm_package_version which returned "0.0.0").

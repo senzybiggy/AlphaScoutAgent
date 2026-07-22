@@ -270,6 +270,7 @@ export function WalletScanResults({ data, riskScore, smartMoneyScore, walletHeal
               <CardHeader className="pb-2 border-b border-border/20">
                 <CardTitle className="text-sm font-mono flex items-center gap-2">
                   <Layers className="h-4 w-4 text-primary" />TOKEN BALANCES
+                  <SourceBadge source={fieldSources.tokenBalances} />
                   <Badge variant="outline" className="ml-auto font-mono text-xs">{data.tokens.length}</Badge>
                 </CardTitle>
               </CardHeader>
@@ -297,23 +298,13 @@ export function WalletScanResults({ data, riskScore, smartMoneyScore, walletHeal
         </div>
       )}
 
-      {/* No Moralis data notice */}
-      {data.dataSource === "limited" && (
-        <Card className="bg-muted/10 border-border/30">
-          <CardContent className="p-4 text-center">
-            <p className="text-xs font-mono text-muted-foreground">
-              ⚡ Add <span className="text-primary">MORALIS_API_KEY</span> to unlock token balances, NFTs, DeFi positions & full transaction history.
-            </p>
-          </CardContent>
-        </Card>
-      )}
-
       {/* DeFi positions */}
       {data.defiPositions.length > 0 && (
         <Card className="bg-card/50 border-border/40">
           <CardHeader className="pb-2 border-b border-border/20">
             <CardTitle className="text-sm font-mono flex items-center gap-2">
               <Zap className="h-4 w-4 text-primary" />DEFI POSITIONS
+              <SourceBadge source={fieldSources.defiPositions} />
               <Badge variant="outline" className="ml-auto font-mono text-xs">{data.defiPositions.length}</Badge>
             </CardTitle>
           </CardHeader>
@@ -352,6 +343,7 @@ export function WalletScanResults({ data, riskScore, smartMoneyScore, walletHeal
           <CardHeader className="pb-2 border-b border-border/20">
             <CardTitle className="text-sm font-mono flex items-center gap-2">
               <Star className="h-4 w-4 text-primary" />NFT HOLDINGS
+              <SourceBadge source={fieldSources.nfts} />
               <Badge variant="outline" className="ml-auto font-mono text-xs">{data.nfts.length}</Badge>
             </CardTitle>
           </CardHeader>
@@ -383,6 +375,7 @@ export function WalletScanResults({ data, riskScore, smartMoneyScore, walletHeal
           <CardHeader className="pb-2 border-b border-border/20">
             <CardTitle className="text-sm font-mono flex items-center gap-2">
               <Activity className="h-4 w-4 text-primary" />RECENT TRANSACTIONS
+              <SourceBadge source={fieldSources.txCount} />
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
@@ -465,13 +458,16 @@ export function WalletScanResults({ data, riskScore, smartMoneyScore, walletHeal
       )}
 
       {/* Gas spending */}
-      {data.totalGasSpentNative && (
+      {(data.totalGasSpentNative || data.chainsUsed.length > 0) && (
         <Card className="bg-card/50 border-border/40">
           <CardContent className="p-4 flex items-center gap-3">
             <div className="p-2 bg-yellow-400/10 rounded-lg"><Zap className="h-4 w-4 text-yellow-400" /></div>
             <div>
-              <p className="text-xs font-mono text-muted-foreground uppercase">Gas Spending (recent txs)</p>
-              <p className="text-sm font-bold font-mono">{data.totalGasSpentNative}</p>
+              <p className="text-xs font-mono text-muted-foreground uppercase flex items-center">
+                {data.totalGasSpentNative ? "Gas Spending (recent txs)" : "Chain Activity"}
+                <SourceBadge source={fieldSources.chainActivity} />
+              </p>
+              {data.totalGasSpentNative && <p className="text-sm font-bold font-mono">{data.totalGasSpentNative}</p>}
             </div>
             <div className="ml-auto text-right">
               <p className="text-xs text-muted-foreground font-mono">Chains Active</p>

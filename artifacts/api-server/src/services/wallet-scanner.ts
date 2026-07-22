@@ -519,26 +519,30 @@ export async function scanWallet(
   // ── EVM ──────────────────────────────────────────────────────────────────
   const resolvedChain = chain ?? "ethereum";
 
-  // Run security check in parallel with primary data fetch
+  // Run security check in parallel with primary data fetch.
+  // Per-provider timeouts: fast data lookups fail quickly; security enrichment gets more time.
   const [primaryResult, secResult] = await Promise.all([
     runWithFallback<WalletScanData>("evmPrimary", [
       {
         name: "Moralis",
         enabled: !!process.env.MORALIS_API_KEY,
-        skipReason: "MORALIS_API_KEY not set — install key for richest wallet data",
+        skipReason: "MORALIS_API_KEY not set",
+        timeoutMs: 8_000,
         fn: () => scanEVMWithMoralis(address, resolvedChain),
       },
-      { name: "Ankr", fn: () => scanEVMWithAnkr(address, resolvedChain) },
+      { name: "Ankr", timeoutMs: 6_000, fn: () => scanEVMWithAnkr(address, resolvedChain) },
       {
         name: "Covalent",
         enabled: !!process.env.COVALENT_API_KEY,
         skipReason: "COVALENT_API_KEY not set",
+        timeoutMs: 8_000,
         fn: () => scanEVMWithCovalent(address, resolvedChain),
       },
     ]),
     runWithFallback<ReturnType<typeof goplus.checkAddressSecurity> extends Promise<infer T> ? T : never>(
       "addressSecurity",
-      [{ name: "GoPlus", fn: () => goplus.checkAddressSecurity(address, resolvedChain) }],
+      // GoPlus security gets a longer timeout — it's critical for risk scoring
+      [{ name: "GoPlus", timeoutMs: 12_000, fn: () => goplus.checkAddressSecurity(address, resolvedChain) }],
     ),
   ]);
 
@@ -548,16 +552,16 @@ export async function scanWallet(
   // If primary providers all failed, try minimal fallbacks
   if (!scan) {
     const minimalResult = await runWithFallback<WalletScanData>("evmMinimal", [
-      { name: "Blockscout", fn: () => scanEVMWithBlockscout(address, resolvedChain) },
-      { name: "Blockchair", fn: () => scanEVMWithBlockchair(address, resolvedChain) },
+      { name: "Blockscout", timeoutMs: 5_000, fn: () => scanEVMWithBlockscout(address, resolvedChain) },
+      { name: "Blockchair", timeoutMs: 5_000, fn: () => scanEVMWithBlockchair(address, resolvedChain) },
       {
         name: "Etherscan",
-        // Works without key but is rate-limited; only used for ethereum
         enabled: resolvedChain === "ethereum" || resolvedChain === "eth",
         skipReason: `Etherscan only supports Ethereum (chain: ${resolvedChain})`,
+        timeoutMs: 5_000,
         fn: () => scanEVMWithEtherscan(address),
       },
-      { name: "Public RPC", fn: () => scanEVMWithRPC(address, resolvedChain) },
+      { name: "Public RPC", timeoutMs: 4_000, fn: () => scanEVMWithRPC(address, resolvedChain) },
     ]);
     allAttempts.push(...minimalResult.attempts);
     scan = minimalResult.data;
