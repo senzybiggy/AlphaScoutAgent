@@ -5,27 +5,18 @@ import { defineConfig } from 'vite';
 
 import runtimeErrorOverlay from '@replit/vite-plugin-runtime-error-modal';
 
-const rawPort = process.env.PORT;
-
-if (!rawPort) {
-  throw new Error(
-    'PORT environment variable is required but was not provided.',
-  );
-}
-
+// PORT is required at runtime (dev server / preview) but not needed for
+// a pure static `vite build`.  Default to 3000 so standalone `npm run build`
+// doesn't throw on missing env.
+const rawPort = process.env.PORT ?? '3000';
 const port = Number(rawPort);
-
 if (Number.isNaN(port) || port <= 0) {
   throw new Error(`Invalid PORT value: "${rawPort}"`);
 }
 
-const basePath = process.env.BASE_PATH;
-
-if (!basePath) {
-  throw new Error(
-    'BASE_PATH environment variable is required but was not provided.',
-  );
-}
+// BASE_PATH defaults to '/' for standalone / Render deployments.
+// In the Replit monorepo it is set to '/alphascout-ai/'.
+const basePath = process.env.BASE_PATH ?? '/';
 
 export default defineConfig({
   base: basePath,
@@ -55,6 +46,12 @@ export default defineConfig({
         '..',
         '..',
         'attached_assets',
+      ),
+      // Resolve the local workspace lib as a vendored copy so the package
+      // builds standalone without the pnpm monorepo present.
+      '@workspace/api-client-react': path.resolve(
+        import.meta.dirname,
+        'src/vendor/api-client-react',
       ),
       // Force all wallet/wagmi packages to the same React instance
       'react': path.resolve(import.meta.dirname, 'node_modules/react'),
