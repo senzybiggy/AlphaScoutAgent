@@ -1,127 +1,131 @@
-import type { Analyzer, AnalyzerInput, AnalyzerOutput, TokenScanData } from "./types.js";
+import type { Analyzer, AnalyzerInput, AnalyzerOutput, AnalyzerMeta, TokenScanData } from "./types.js";
 
 function usd(n: number | null | undefined): string {
-  if (n == null) return "N/A";
+  if (n == null) return "Data unavailable from providers.";
   if (n >= 1_000_000_000) return `$${(n / 1_000_000_000).toFixed(2)}B`;
   if (n >= 1_000_000)     return `$${(n / 1_000_000).toFixed(2)}M`;
   if (n >= 1_000)         return `$${(n / 1_000).toFixed(0)}K`;
   return `$${n.toFixed(n < 0.01 ? 8 : n < 1 ? 4 : 2)}`;
 }
 function pct(n: number | null | undefined): string {
-  if (n == null) return "N/A";
+  if (n == null) return "Data unavailable from providers.";
   return `${n >= 0 ? "+" : ""}${n.toFixed(2)}%`;
 }
 function yn(v: boolean | null | undefined, warnTrue = false): string {
-  if (v == null) return "Unknown";
+  if (v == null) return "Data unavailable from providers.";
   if (v) return warnTrue ? "⚠ YES" : "✓ Yes";
   return warnTrue ? "✓ No" : "No";
 }
 
 export const tokenAnalyzer: Analyzer = {
-  systemPrompt(_input: AnalyzerInput, scanData?: unknown): string {
+  systemPrompt(_input: AnalyzerInput, scanData?: unknown, meta?: AnalyzerMeta): string {
     const d = scanData as TokenScanData | undefined;
+    const maxConfidence = meta?.dataQualityScore ?? 20;
+    const fieldSrc = meta?.fieldSources ?? {};
+
     if (!d) {
-      return `You are AlphaScout AI, a token intelligence engine. Analyze the token. State live data was unavailable.
-Return ONLY valid JSON: { "executiveSummary": "...", "riskScore": 50, "keyFindings": ["..."], "risks": ["..."], "opportunities": ["..."], "recommendations": ["..."], "confidenceScore": 20, "metrics": [] }`;
+      return `You are AlphaScout AI, a token intelligence engine.
+IMPORTANT: Live token data was unavailable from all providers. Do NOT invent or estimate any values.
+Return ONLY valid JSON:
+{ "executiveSummary": "Live token data was unavailable from all providers. No analysis can be performed without verified on-chain data.", "riskScore": 50, "keyFindings": ["Data unavailable from providers — no analysis generated"], "risks": ["Cannot assess risk without verified data"], "opportunities": [], "recommendations": ["Retry the scan — providers may be temporarily unavailable"], "confidenceScore": ${maxConfidence}, "metrics": [] }`;
     }
 
     const sec = d.security;
+    const provNote = (src: string | undefined) => src ? `[${src}]` : "[source: unverified]";
     const holderList = d.topHolders.slice(0, 8).map((h) =>
       `  • ${h.address.slice(0, 12)}...${h.tag ? ` [${h.tag}]` : ""}: ${h.pct.toFixed(2)}%${h.isLocked ? " 🔒 locked" : ""}`
-    ).join("\n") || "  Not available";
+    ).join("\n") || "  Data unavailable from providers.";
     const pairList = d.dexPairs.slice(0, 4).map((p) =>
-      `  • ${p.name}: ${p.liquidity} liquidity — ${p.pair.slice(0, 14)}...`
+      `  • ${p.name}: ${p.liquidity} liquidity`
     ).join("\n") || "  None found";
     const cgCom = d.cgCommunity;
     const communitySection = cgCom ? `
-COMMUNITY & SOCIAL (CoinGecko):
-  Twitter followers  : ${cgCom.twitterFollowers?.toLocaleString() ?? "N/A"}
-  Reddit subscribers : ${cgCom.redditSubscribers?.toLocaleString() ?? "N/A"}
-  Telegram size      : ${cgCom.telegramSize?.toLocaleString() ?? "N/A"}
-  Community score    : ${cgCom.communityScore?.toFixed(1) ?? "N/A"} / 100
-  Liquidity score    : ${cgCom.liquidityScore?.toFixed(1) ?? "N/A"} / 100` : "";
+COMMUNITY & SOCIAL (CoinGecko ${provNote(fieldSrc.cgCommunity)}):
+  Twitter followers  : ${cgCom.twitterFollowers?.toLocaleString() ?? "Data unavailable from providers."}
+  Reddit subscribers : ${cgCom.redditSubscribers?.toLocaleString() ?? "Data unavailable from providers."}
+  Telegram size      : ${cgCom.telegramSize?.toLocaleString() ?? "Data unavailable from providers."}
+  Community score    : ${cgCom.communityScore?.toFixed(1) ?? "Data unavailable from providers."} / 100
+  Liquidity score    : ${cgCom.liquidityScore?.toFixed(1) ?? "Data unavailable from providers."} / 100` : "";
     const cgDetails = d.cgDescription ? `\nTOKEN DESCRIPTION (CoinGecko):\n  ${d.cgDescription.slice(0, 300)}...` : "";
     const categories = d.cgCategories?.length ? `\n  Categories: ${d.cgCategories.join(", ")}` : "";
     const athInfo = d.cgAthUsd ? `\n  All-Time High: ${usd(d.cgAthUsd)} (currently ${pct(d.cgAthChangePercent)} from ATH)` : "";
-    const github = d.cgGithubUrls?.length ? `\n  GitHub: ${d.cgGithubUrls[0]}` : "";
 
     return `You are AlphaScout AI, a blockchain token intelligence engine.
 
-LIVE TOKEN DATA (source: ${d.dataSource}, fetched: ${new Date(d.fetchedAt).toUTCString()})
+VERIFIED TOKEN DATA (sources: ${d.dataSource}, fetched: ${new Date(d.fetchedAt).toUTCString()})
+Data quality: ${meta?.dataQualityScore ?? "unknown"}% | Reliability: ${meta?.reliabilityScore ?? "unknown"}%
 ══════════════════════════════════════════════════════════════
 TOKEN IDENTITY
-  Name / Symbol    : ${d.name || "Unknown"} (${d.symbol || "?"})
-  Chain            : ${d.chainId || "Unknown"}
-  Contract Address : ${d.contractAddress || "Unknown"}
-  Listed on DEX    : ${yn(d.security.isInDex)}
-  Pair Created     : ${d.pairCreatedAt ? new Date(d.pairCreatedAt).toLocaleDateString() : "Unknown"}
-  Genesis Date     : ${d.cgGenesisDate ?? "Unknown"}${categories}
+  Name / Symbol    : ${d.name || "Data unavailable from providers."} (${d.symbol || "?"})
+  Chain            : ${d.chainId || "Data unavailable from providers."}
+  Contract Address : ${d.contractAddress || "Data unavailable from providers."}
+  Listed on DEX    : ${yn(sec.isInDex)}
+  Pair Created     : ${d.pairCreatedAt ? new Date(d.pairCreatedAt).toLocaleDateString() : "Data unavailable from providers."}
+  Genesis Date     : ${d.cgGenesisDate ?? "Data unavailable from providers."}${categories}
 
-MARKET DATA (DexScreener + CoinGecko)
-  Price            : ${d.priceUsd != null ? `$${d.priceUsd}` : "No price data"}
+MARKET DATA ${provNote(fieldSrc.priceUsd)}
+  Price            : ${d.priceUsd != null ? `$${d.priceUsd}` : "Data unavailable from providers."}
   1h Change        : ${pct(d.priceChange1h)}
   6h Change        : ${pct(d.priceChange6h)}
   24h Change       : ${pct(d.priceChange24h)}${athInfo}
   Market Cap       : ${usd(d.marketCapUsd)}
   FDV              : ${usd(d.fdvUsd)}
-  Liquidity        : ${usd(d.liquidityUsd)}
+  Liquidity        : ${usd(d.liquidityUsd)} ${provNote(fieldSrc.liquidityUsd)}
   24h Volume       : ${usd(d.volumeH24)}
-  24h Buys / Sells : ${d.buys24h ?? "N/A"} / ${d.sells24h ?? "N/A"}
-  Total Holders    : ${d.holderCount?.toLocaleString() ?? "Unknown"}
+  24h Buys / Sells : ${d.buys24h ?? "Data unavailable from providers."} / ${d.sells24h ?? "Data unavailable from providers."}
+  Total Holders    : ${d.holderCount != null ? d.holderCount.toLocaleString() : "Data unavailable from providers."} ${provNote(fieldSrc.holderCount)}
 
 DEX PAIRS:
 ${pairList}
 
-CONTRACT SECURITY (GoPlus):
+CONTRACT SECURITY ${provNote(fieldSrc.honeypotCheck)}:
   Overall Risk       : ${sec.overallRisk.toUpperCase()}
-  Honeypot           : ${sec.isHoneypot === null ? "Unknown" : sec.isHoneypot ? "🚨 HONEYPOT CONFIRMED" : "✓ Not a honeypot"}
-  Source Code        : ${sec.isOpenSource === null ? "Unknown" : sec.isOpenSource ? "✓ Verified / Open Source" : "⚠ NOT VERIFIED — unverified contract"}
-  Buy Tax            : ${sec.buyTax ?? "Unknown"}%
-  Sell Tax           : ${sec.sellTax ?? "Unknown"}%
+  Honeypot           : ${sec.isHoneypot === null ? "Data unavailable from providers." : sec.isHoneypot ? "🚨 HONEYPOT CONFIRMED" : "✓ Not a honeypot"}
+  Source Code        : ${sec.isOpenSource === null ? "Data unavailable from providers." : sec.isOpenSource ? "✓ Verified / Open Source" : "⚠ NOT VERIFIED — bytecode only"}
+  Buy Tax            : ${sec.buyTax ?? "Data unavailable from providers."}%
+  Sell Tax           : ${sec.sellTax ?? "Data unavailable from providers."}%
   Mintable           : ${yn(sec.isMintable, true)}
   Hidden Owner       : ${yn(sec.hasHiddenOwner, true)}
   Blacklist Function : ${yn(sec.hasBlacklist, true)}
   Owner Can Takeback : ${yn(sec.ownerCanTakeBack, true)}
   Transfer Pausable  : ${yn(sec.transferPausable, true)}
   Self-Destruct      : ${yn(sec.hasSelfDestruct, true)}
-  External Calls     : ${yn(sec.hasExternalCalls, true)}
   Anti-Whale         : ${yn(sec.isAntiWhale)}
   Proxy Contract     : ${yn(sec.isProxy)}
-  LP Holder Count    : ${sec.lpHolderCount ?? "Unknown"}
-  LP Top Holder %    : ${sec.lpTopHolderPct != null ? `${parseFloat(sec.lpTopHolderPct).toFixed(2)}%` : "Unknown"}
-  Creator Address    : ${sec.creatorAddress?.slice(0, 18) ?? "Unknown"}...
-  Creator Holds      : ${sec.creatorHoldPct != null ? `${parseFloat(sec.creatorHoldPct).toFixed(2)}%` : "Unknown"}
-  Owner Address      : ${sec.ownerAddress?.slice(0, 18) ?? "Unknown"}...
-  Owner Holds        : ${sec.ownerHoldPct != null ? `${parseFloat(sec.ownerHoldPct).toFixed(2)}%` : "Unknown"}
 
-TOP HOLDERS (concentration analysis):
+TOP HOLDERS (concentration analysis ${provNote(fieldSrc.topHolders)}):
 ${holderList}
-${communitySection}${cgDetails}${github}
+${communitySection}${cgDetails}
 
 SOCIAL / WEBSITE:
   Websites : ${d.websites.length > 0 ? d.websites.join(", ") : "None detected"}
   Socials  : ${d.socials.map((s) => `${s.type}: ${s.url}`).join(" | ") || "None detected"}
 ══════════════════════════════════════════════════════════════
 
-Based ONLY on the real data above, return ONLY valid JSON (no markdown fences):
-{
-  "executiveSummary": "<2-3 sentences. State token name, current price, market cap, overall security verdict, and key risk factor. Be specific.>",
-  "riskScore": <0-100. Honeypot=100; high tax=85+; hidden owner/blacklist=70+; unverified=60+; mintable=50+; all clear+verified=0-25>,
-  "keyFindings": ["<5 specific findings referencing exact data: price action, liquidity depth, holder concentration, security flags, community metrics>"],
-  "risks": ["<3-4 specific risks with data: top holder concentration %, tax levels, dangerous functions detected, low liquidity vs mcap, etc.>"],
-  "opportunities": ["<2-3 upside factors if any: strong community metrics, low risk score, growing liquidity, use case, etc. Only cite real data.>"],
-  "recommendations": ["<3-4 actionable items: due diligence steps, position sizing given risks, contract verification check, etc.>"],
-  "confidenceScore": <0-100. 90+ if DexScreener+GoPlus+CoinGecko all present; 70-89 if DexScreener+GoPlus; 40-69 if partial data; <40 if minimal data>,
-  "metrics": []
-}
+CRITICAL INSTRUCTIONS:
+1. NEVER invent prices, market caps, holder counts, or security flags not shown above.
+2. If a field says "Data unavailable from providers.", you MUST repeat that phrase — do not substitute a guess.
+3. Your confidenceScore MUST NOT exceed ${maxConfidence} (data quality cap).
+4. Risk score for honeypot must be 95-100; do not lower it regardless of other factors.
 
-RULES: Never invent prices, market caps, or holder counts. If "Unknown", acknowledge it. Every risk finding must cite a specific data point.`;
+Based ONLY on the verified data above, return ONLY valid JSON (no markdown fences):
+{
+  "executiveSummary": "<2-3 sentences. State token name, price (or 'price data unavailable'), security verdict. Be specific about data gaps.>",
+  "riskScore": <0-100. Honeypot=100; high tax=85+; hidden owner/blacklist=70+; unverified=60+; mintable=50+; all clear+verified=0-25. If security data unavailable, use 50.>,
+  "keyFindings": ["<5 findings. For any unavailable field, say 'Data unavailable from providers for [field name]'. Cite only verified data.>"],
+  "risks": ["<3-4 risks. Reference only confirmed GoPlus flags and verified market data.>"],
+  "opportunities": ["<2-3 upside factors from verified data only.>"],
+  "recommendations": ["<3-4 actionable items based on verified data>"],
+  "confidenceScore": <0-${maxConfidence}. MUST NOT exceed ${maxConfidence}.>,
+  "metrics": []
+}`;
   },
 
-  userMessage(input: AnalyzerInput, scanData?: unknown): string {
+  userMessage(input: AnalyzerInput, scanData?: unknown, meta?: AnalyzerMeta): string {
     const d = scanData as TokenScanData | undefined;
-    if (!d) return `Analyze token: ${input.target}${input.chain ? ` on ${input.chain}` : ""}. State data unavailable.`;
-    return `Produce the intelligence report for ${d.symbol || input.target} (${input.target}) using the live data in the system prompt. Cite exact numbers.`;
+    const maxConf = meta?.dataQualityScore ?? 20;
+    if (!d) return `Analyze token: ${input.target}. Data unavailable from all providers. Keep confidenceScore at ${maxConf}.`;
+    return `Produce the intelligence report for ${d.symbol || input.target} (${input.target}) using ONLY the verified data in the system prompt. For fields marked "Data unavailable from providers.", reproduce that phrase exactly. Your confidenceScore must not exceed ${maxConf}.`;
   },
 
   postProcess(output: AnalyzerOutput, _input: AnalyzerInput, scanData?: unknown): void {

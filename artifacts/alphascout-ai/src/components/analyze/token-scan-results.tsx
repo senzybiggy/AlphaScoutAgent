@@ -16,6 +16,16 @@ interface Props {
   confidenceScore: number | null;
   recommendations: string[];
   target: string;
+  fieldSources?: Record<string, string>;
+}
+
+function SourceBadge({ source }: { source?: string }) {
+  if (!source) return null;
+  return (
+    <span className="ml-1 inline-flex items-center px-1.5 py-0 rounded text-[9px] font-mono border border-primary/15 text-primary/50 bg-primary/5 leading-4">
+      {source}
+    </span>
+  );
 }
 
 function PriceChange({ pct, label }: { pct: number | null; label: string }) {
@@ -126,7 +136,7 @@ function SecuritySummary({ sec }: { sec: TokenSecurity }) {
   );
 }
 
-export function TokenScanResults({ data, riskScore, summary, insights, risks, opportunities, confidenceScore, recommendations, target }: Props) {
+export function TokenScanResults({ data, riskScore, summary, insights, risks, opportunities, confidenceScore, recommendations, target, fieldSources }: Props) {
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       {/* Header */}
@@ -174,16 +184,18 @@ export function TokenScanResults({ data, riskScore, summary, insights, risks, op
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="md:col-span-2 grid grid-cols-2 sm:grid-cols-3 gap-3">
           {[
-            { label: "Price", value: data.priceUsd != null ? `$${data.priceUsd}` : "—" },
-            { label: "Market Cap", value: fmtUsd(data.marketCapUsd, true) },
-            { label: "FDV", value: fmtUsd(data.fdvUsd, true) },
-            { label: "Liquidity", value: fmtUsd(data.liquidityUsd, true) },
-            { label: "24h Volume", value: fmtUsd(data.volumeH24, true) },
-            { label: "Holders", value: data.holderCount?.toLocaleString() ?? "—" },
-          ].map(({ label, value }) => (
+            { label: "Price",      value: data.priceUsd != null ? `$${data.priceUsd}` : "—", sourceKey: "priceUsd" },
+            { label: "Market Cap", value: fmtUsd(data.marketCapUsd, true),                   sourceKey: "marketCap" },
+            { label: "FDV",        value: fmtUsd(data.fdvUsd, true),                         sourceKey: "fdvUsd" },
+            { label: "Liquidity",  value: fmtUsd(data.liquidityUsd, true),                   sourceKey: "liquidityUsd" },
+            { label: "24h Volume", value: fmtUsd(data.volumeH24, true),                      sourceKey: "volumeH24" },
+            { label: "Holders",    value: data.holderCount?.toLocaleString() ?? "—",         sourceKey: "holderCount" },
+          ].map(({ label, value, sourceKey }) => (
             <Card key={label} className="bg-card/50 border-border/40">
               <CardContent className="p-3">
-                <p className="text-xs font-mono text-muted-foreground uppercase">{label}</p>
+                <p className="text-xs font-mono text-muted-foreground uppercase flex items-center">
+                  {label}<SourceBadge source={fieldSources?.[sourceKey]} />
+                </p>
                 <p className="text-base font-bold font-mono mt-0.5">{value}</p>
               </CardContent>
             </Card>

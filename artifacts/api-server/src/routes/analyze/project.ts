@@ -74,7 +74,7 @@ CRYPTO KEYWORDS DETECTED:
 
 PAGE CONTENT PREVIEW (first ~6000 chars of cleaned text):
 ───────────────────────────────────────────────────────────
-${d.bodyText || "Could not extract page content"}
+${d.bodyPreview || "Could not extract page content"}
 ───────────────────────────────────────────────────────────
 ══════════════════════════════════════════════════════════════
 
@@ -157,7 +157,7 @@ export async function fetchProjectScanData(input: AnalyzerInput): Promise<Projec
       url: page.url,
       title: page.title,
       description: page.description,
-      bodyPreview: page.bodyText.slice(0, 500),
+      bodyPreview: (page.bodyText || "").slice(0, 500),
       socials: page.socials,
       tokenMentions: page.tokenMentions,
       keywords: page.keywords,

@@ -1,5 +1,5 @@
 import type { AnalyzeResult } from "@workspace/api-client-react";
-import type { RichAnalyzeResult } from "@/lib/scan-types";
+import type { RichAnalyzeResult, ProviderAttempt } from "@/lib/scan-types";
 import { RiskGauge } from "./risk-gauge";
 import { WalletScanResults } from "./wallet-scan-results";
 import { TokenScanResults } from "./token-scan-results";
@@ -10,7 +10,8 @@ import { ConfidencePanel } from "./confidence-panel";
 import { WatchlistButton } from "./watchlist-button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { TrendingUp, TrendingDown, Minus, Activity, ShieldAlert, Cpu } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, Activity, ShieldAlert, Cpu, AlertOctagon, XCircle, MinusCircle, CheckCircle2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 
 interface AnalysisResultsProps {
@@ -104,6 +105,57 @@ function buildCopilotContext(r: RichAnalyzeResult): string {
   return JSON.stringify(trimmed, null, 2);
 }
 
+function DataUnavailableBanner({
+  target, type, providerAttempts = [],
+}: { target: string; type: string; providerAttempts?: ProviderAttempt[] }) {
+  const failed  = providerAttempts.filter((a) => a.status === "failed");
+  const skipped = providerAttempts.filter((a) => a.status === "skipped");
+
+  return (
+    <Card className="border-destructive/30 bg-destructive/5">
+      <CardContent className="p-5 space-y-3">
+        <div className="flex items-center gap-2.5">
+          <AlertOctagon className="h-5 w-5 text-destructive flex-shrink-0" />
+          <div>
+            <p className="text-sm font-mono font-bold text-destructive uppercase tracking-wider">Data Unavailable</p>
+            <p className="text-xs font-mono text-muted-foreground mt-0.5 break-all">
+              No providers could supply verified data for <span className="text-foreground/70">{target}</span>
+              {type ? ` (${type})` : ""}.
+            </p>
+          </div>
+        </div>
+        {providerAttempts.length > 0 && (
+          <div className="space-y-1.5 pl-7">
+            {failed.map((a, i) => (
+              <div key={i} className="flex items-start gap-2 text-xs font-mono">
+                <XCircle className="h-3.5 w-3.5 text-destructive/70 mt-0.5 flex-shrink-0" />
+                <span>
+                  <span className="text-destructive/80 font-semibold">{a.provider}</span>
+                  <span className="text-muted-foreground/60 mx-1">·</span>
+                  <span className="text-muted-foreground/50">{a.error ?? "No data returned"}</span>
+                </span>
+              </div>
+            ))}
+            {skipped.map((a, i) => (
+              <div key={i} className="flex items-start gap-2 text-xs font-mono">
+                <MinusCircle className="h-3.5 w-3.5 text-muted-foreground/40 mt-0.5 flex-shrink-0" />
+                <span>
+                  <span className="text-muted-foreground/50 font-semibold">{a.provider}</span>
+                  <span className="text-muted-foreground/40 mx-1">·</span>
+                  <span className="text-muted-foreground/40">{a.error ?? "Skipped — no API key"}</span>
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+        <p className="text-xs font-mono text-muted-foreground pl-7">
+          Retry in a few seconds or add provider API keys to improve coverage.
+        </p>
+      </CardContent>
+    </Card>
+  );
+}
+
 export function AnalysisResults({ result, readOnly = false }: AnalysisResultsProps) {
   const rich = result as unknown as RichAnalyzeResult;
   const insightsLabel = INSIGHTS_LABEL[result.type] ?? "AI INSIGHTS & VULNERABILITIES";
@@ -118,6 +170,7 @@ export function AnalysisResults({ result, readOnly = false }: AnalysisResultsPro
   const hasTokenScan = Boolean(rich.tokenScan);
   const hasContractScan = Boolean(rich.contractScan);
   const hasRichScan = hasWalletScan || hasTokenScan || hasContractScan;
+  const isDataUnavailable = rich.isDataUnavailable === true;
 
   // Determine watchlist type
   const watchlistType = (rich.type === "wallet" || rich.type === "token" || rich.type === "contract")
@@ -156,11 +209,20 @@ export function AnalysisResults({ result, readOnly = false }: AnalysisResultsPro
         </div>
       </div>
 
-      {/* AI Confidence + data freshness panel */}
+      {/* DATA_UNAVAILABLE banner — shown instead of scan results */}
+      {isDataUnavailable && (
+        <DataUnavailableBanner
+          target={rich.target}
+          type={rich.type}
+          providerAttempts={rich.providerAttempts ?? []}
+        />
+      )}
+
+      {/* AI Confidence + Data Quality + Reliability panel (always shown) */}
       <ConfidencePanel result={rich} />
 
       {/* Rich type-specific view — wallet / token / contract */}
-      {hasWalletScan && rich.walletScan && (
+      {!isDataUnavailable && hasWalletScan && rich.walletScan && (
         <WalletScanResults
           data={rich.walletScan}
           riskScore={rich.riskScore ?? null}
@@ -172,10 +234,11 @@ export function AnalysisResults({ result, readOnly = false }: AnalysisResultsPro
           opportunities={rich.opportunities ?? []}
           confidenceScore={rich.confidenceScore ?? null}
           recommendations={rich.recommendations ?? []}
+          fieldSources={rich.fieldSources ?? {}}
         />
       )}
 
-      {hasTokenScan && rich.tokenScan && (
+      {!isDataUnavailable && hasTokenScan && rich.tokenScan && (
         <TokenScanResults
           data={rich.tokenScan}
           riskScore={rich.riskScore ?? null}
@@ -186,10 +249,11 @@ export function AnalysisResults({ result, readOnly = false }: AnalysisResultsPro
           confidenceScore={rich.confidenceScore ?? null}
           recommendations={rich.recommendations ?? []}
           target={rich.target}
+          fieldSources={rich.fieldSources ?? {}}
         />
       )}
 
-      {hasContractScan && rich.contractScan && (
+      {!isDataUnavailable && hasContractScan && rich.contractScan && (
         <ContractScanResults
           data={rich.contractScan}
           riskScore={rich.riskScore ?? null}
@@ -199,6 +263,7 @@ export function AnalysisResults({ result, readOnly = false }: AnalysisResultsPro
           opportunities={rich.opportunities ?? []}
           confidenceScore={rich.confidenceScore ?? null}
           recommendations={rich.recommendations ?? []}
+          fieldSources={rich.fieldSources ?? {}}
         />
       )}
 

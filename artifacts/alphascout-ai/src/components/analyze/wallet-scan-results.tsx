@@ -27,6 +27,16 @@ interface Props {
   opportunities: string[];
   confidenceScore: number | null;
   recommendations: string[];
+  fieldSources?: Record<string, string>;
+}
+
+function SourceBadge({ source }: { source?: string }) {
+  if (!source) return null;
+  return (
+    <span className="ml-1 inline-flex items-center px-1.5 py-0 rounded text-[9px] font-mono border border-primary/15 text-primary/50 bg-primary/5 leading-4">
+      {source}
+    </span>
+  );
 }
 
 function StatCard({ label, value, sub, icon: Icon, accent = false }: {
@@ -101,7 +111,7 @@ function TokenRow({ token, rank }: { token: WalletToken; rank: number }) {
   );
 }
 
-export function WalletScanResults({ data, riskScore, smartMoneyScore, walletHealthScore, summary, insights, risks, opportunities, confidenceScore, recommendations }: Props) {
+export function WalletScanResults({ data, riskScore, smartMoneyScore, walletHealthScore, summary, insights, risks, opportunities, confidenceScore, recommendations, fieldSources = {} }: Props) {
   // Portfolio pie data
   const topTokens = data.tokens.filter((t) => t.usdValue && t.usdValue > 0).slice(0, 9);
   const otherValue = data.tokens.slice(9).reduce((s, t) => s + (t.usdValue ?? 0), 0);
@@ -150,10 +160,54 @@ export function WalletScanResults({ data, riskScore, smartMoneyScore, walletHeal
 
       {/* Overview stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <StatCard label="Portfolio Value" value={fmtUsd(data.totalNetWorthUsd, true)} sub={`${data.nativeBalance} ${data.nativeSymbol}`} icon={Wallet} accent />
-        <StatCard label="Native Balance" value={`${data.nativeBalance} ${data.nativeSymbol}`} sub={fmtUsd(data.nativeBalanceUsd)} icon={Coins} />
-        <StatCard label="Wallet Age" value={data.walletAgeDays != null ? `${data.walletAgeDays}d` : "—"} sub={data.firstTxDate ? `Since ${new Date(data.firstTxDate).getFullYear()}` : undefined} icon={Clock} />
-        <StatCard label="Transactions" value={data.txCount > 0 ? data.txCount.toLocaleString() : "—"} sub={data.lastTxDate ? `Last: ${timeAgo(data.lastTxDate)}` : undefined} icon={Activity} />
+        <Card className="bg-card/50 border-border/40">
+          <CardContent className="p-4 flex items-start gap-3">
+            <div className="p-2 rounded-lg bg-primary/10"><Wallet className="h-4 w-4 text-primary" /></div>
+            <div className="min-w-0">
+              <p className="text-xs font-mono text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+                Portfolio Value<SourceBadge source={fieldSources.totalNetWorth} />
+              </p>
+              <p className="text-lg font-bold font-mono truncate">{fmtUsd(data.totalNetWorthUsd, true)}</p>
+              <p className="text-xs text-muted-foreground">{data.nativeBalance} {data.nativeSymbol}</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="bg-card/50 border-border/40">
+          <CardContent className="p-4 flex items-start gap-3">
+            <div className="p-2 rounded-lg bg-muted/30"><Coins className="h-4 w-4 text-muted-foreground" /></div>
+            <div className="min-w-0">
+              <p className="text-xs font-mono text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+                Native Balance<SourceBadge source={fieldSources.nativeBalance} />
+              </p>
+              <p className="text-lg font-bold font-mono truncate">{data.nativeBalance} {data.nativeSymbol}</p>
+              <p className="text-xs text-muted-foreground">{fmtUsd(data.nativeBalanceUsd)}</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="bg-card/50 border-border/40">
+          <CardContent className="p-4 flex items-start gap-3">
+            <div className="p-2 rounded-lg bg-muted/30"><Clock className="h-4 w-4 text-muted-foreground" /></div>
+            <div className="min-w-0">
+              <p className="text-xs font-mono text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+                Wallet Age<SourceBadge source={fieldSources.walletAge} />
+              </p>
+              <p className="text-lg font-bold font-mono truncate">{data.walletAgeDays != null ? `${data.walletAgeDays}d` : "—"}</p>
+              {data.firstTxDate && <p className="text-xs text-muted-foreground">Since {new Date(data.firstTxDate).getFullYear()}</p>}
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="bg-card/50 border-border/40">
+          <CardContent className="p-4 flex items-start gap-3">
+            <div className="p-2 rounded-lg bg-muted/30"><Activity className="h-4 w-4 text-muted-foreground" /></div>
+            <div className="min-w-0">
+              <p className="text-xs font-mono text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+                Transactions<SourceBadge source={fieldSources.txCount} />
+              </p>
+              <p className="text-lg font-bold font-mono truncate">{data.txCount > 0 ? data.txCount.toLocaleString() : "—"}</p>
+              {data.lastTxDate && <p className="text-xs text-muted-foreground">Last: {timeAgo(data.lastTxDate)}</p>}
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Score row */}

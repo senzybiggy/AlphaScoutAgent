@@ -1,5 +1,13 @@
 /** Extended types returned by the enriched /api/analyze endpoint. */
 
+export interface ProviderAttempt {
+  provider: string;
+  category: string;
+  status: "success" | "failed" | "skipped";
+  error: string | null;
+  latencyMs: number;
+}
+
 export interface WalletToken {
   address: string; symbol: string; name: string; logo: string | null;
   balanceFormatted: string; usdPrice: number | null; usdValue: number | null;
@@ -34,6 +42,8 @@ export interface WalletScanData {
   topCounterparties: { address: string; label: string | null; txCount: number; direction: "in" | "out" | "both" }[];
   addressRiskLabels: string[]; isSanctioned: boolean; isMixer: boolean; isScammer: boolean;
   smartMoneyScore: number | null; walletHealthScore: number | null; recommendations: string[];
+  providerAttempts?: ProviderAttempt[];
+  fieldSources?: Record<string, string>;
 }
 export interface TokenSecurity {
   isHoneypot: boolean | null; buyTax: string | null; sellTax: string | null;
@@ -61,16 +71,19 @@ export interface TokenScanData {
   pairCreatedAt: string | null; imageUrl: string | null;
   websites: string[]; socials: { type: string; url: string }[];
   security: TokenSecurity; recommendations: string[];
-  // CoinGecko enrichment
   cgDescription: string | null; cgCategories: string[];
   cgCommunity: { twitterFollowers: number | null; redditSubscribers: number | null; telegramSize: number | null; communityScore: number | null; liquidityScore: number | null } | null;
   cgAthUsd: number | null; cgAthChangePercent: number | null;
   cgGenesisDate: string | null; cgGithubUrls: string[];
+  providerAttempts?: ProviderAttempt[];
+  fieldSources?: Record<string, string>;
 }
 export interface ContractScanData {
   dataSource: string; fetchedAt: string; chainId: string | null;
   security: TokenSecurity; ownerAddress: string | null;
   totalSupply: string | null; holderCount: number | null; recommendations: string[];
+  providerAttempts?: ProviderAttempt[];
+  fieldSources?: Record<string, string>;
 }
 export interface ProjectScanData {
   dataSource: string; fetchedAt: string; url: string | null;
@@ -95,6 +108,12 @@ export interface RichAnalyzeResult {
   opportunities: string[];
   confidenceScore: number | null;
   smartMoneyScore: number | null; walletHealthScore: number | null;
+  // Verified data quality fields
+  dataQualityScore: number;
+  reliabilityScore: number;
+  providerAttempts: ProviderAttempt[];
+  fieldSources: Record<string, string>;
+  isDataUnavailable?: boolean;
 }
 
 export function fmtUsd(n: number | null | undefined, compact = false): string {

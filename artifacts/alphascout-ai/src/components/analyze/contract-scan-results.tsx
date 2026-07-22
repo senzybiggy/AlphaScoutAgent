@@ -15,6 +15,7 @@ interface Props {
   opportunities: string[];
   confidenceScore: number | null;
   recommendations: string[];
+  fieldSources?: Record<string, string>;
 }
 
 interface FlagRow {

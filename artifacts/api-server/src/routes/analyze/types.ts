@@ -1,3 +1,21 @@
+// ── Provider tracking ─────────────────────────────────────────────────────────
+
+export interface ProviderAttempt {
+  provider: string;
+  category: string;
+  status: "success" | "failed" | "skipped";
+  error: string | null;
+  latencyMs: number;
+}
+
+export interface AnalyzerMeta {
+  dataQualityScore: number;
+  reliabilityScore: number;
+  fieldSources: Record<string, string>;
+}
+
+// ── Shared input ──────────────────────────────────────────────────────────────
+
 export interface AnalyzerInput {
   target: string;
   type: "wallet" | "token" | "contract" | "project";
@@ -69,8 +87,9 @@ export interface DeFiPosition {
 
 export interface WalletScanData {
   chain: string;
-  dataSource: "moralis" | "blockstream" | "limited" | "ankr" | "solana-rpc" | "rpc";
+  dataSource: string;
   fetchedAt: string;
+  /** null means the value was not obtainable from any provider */
   nativeBalance: string;
   nativeSymbol: string;
   nativeBalanceUsd: number | null;
@@ -103,6 +122,9 @@ export interface WalletScanData {
   smartMoneyScore: number | null;
   walletHealthScore: number | null;
   recommendations: string[];
+  // Provider provenance
+  providerAttempts?: ProviderAttempt[];
+  fieldSources?: Record<string, string>;
 }
 
 // ── Token scan types ─────────────────────────────────────────────────────────
@@ -172,6 +194,9 @@ export interface TokenScanData {
   cgAthChangePercent: number | null;
   cgGenesisDate: string | null;
   cgGithubUrls: string[];
+  // Provider provenance
+  providerAttempts?: ProviderAttempt[];
+  fieldSources?: Record<string, string>;
 }
 
 // ── Contract scan types ──────────────────────────────────────────────────────
@@ -185,6 +210,9 @@ export interface ContractScanData {
   totalSupply: string | null;
   holderCount: number | null;
   recommendations: string[];
+  // Provider provenance
+  providerAttempts?: ProviderAttempt[];
+  fieldSources?: Record<string, string>;
 }
 
 // ── Project scan types ───────────────────────────────────────────────────────
@@ -213,11 +241,9 @@ export interface AnalyzerOutput {
   metrics: AnalyzerMetric[];
   insights: string[];
   sections: AnalyzerSection[];
-  // Structured intelligence fields (new)
   risks?: string[];
   opportunities?: string[];
   confidenceScore?: number;
-  // Extended rich scan data
   walletScan?: WalletScanData;
   tokenScan?: TokenScanData;
   contractScan?: ContractScanData;
@@ -228,7 +254,7 @@ export interface AnalyzerOutput {
 }
 
 export interface Analyzer {
-  systemPrompt(input: AnalyzerInput, scanData?: unknown): string;
-  userMessage(input: AnalyzerInput, scanData?: unknown): string;
+  systemPrompt(input: AnalyzerInput, scanData?: unknown, meta?: AnalyzerMeta): string;
+  userMessage(input: AnalyzerInput, scanData?: unknown, meta?: AnalyzerMeta): string;
   postProcess?(output: AnalyzerOutput, input: AnalyzerInput, scanData?: unknown): void;
 }

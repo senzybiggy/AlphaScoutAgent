@@ -63,7 +63,7 @@ function extractSocials(html: string): { platform: string; url: string }[] {
   for (const { platform, regex } of SOCIAL_PATTERNS) {
     const matches = html.match(regex) ?? [];
     if (matches.length > 0 && !found.has(platform)) {
-      found.set(platform, matches[0]);
+      found.set(platform, matches[0]!);
     }
   }
   return Array.from(found.entries()).map(([platform, url]) => ({ platform, url }));
