@@ -10,6 +10,7 @@ import {
 import { cn } from "@/lib/utils";
 import type { WalletScanData, WalletToken } from "@/lib/scan-types";
 import { fmtUsd, shortAddr, timeAgo, riskColor } from "@/lib/scan-types";
+import { WalletIntelligence } from "./wallet-intelligence";
 
 const PIE_COLORS = [
   "#3b82f6","#8b5cf6","#06b6d4","#10b981","#f59e0b",
@@ -157,6 +158,9 @@ export function WalletScanResults({ data, riskScore, smartMoneyScore, walletHeal
           </CardContent>
         </Card>
       )}
+
+      {/* Wallet Intelligence detection */}
+      <WalletIntelligence data={data} />
 
       {/* Overview stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">

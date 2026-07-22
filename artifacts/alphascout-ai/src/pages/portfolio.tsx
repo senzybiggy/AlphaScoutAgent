@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from "react";
 import {
   TrendingUp, TrendingDown, Wallet, BarChart3, Activity, AlertCircle,
   Loader2, RefreshCw, PieChartIcon, LineChart as LineChartIcon, ArrowUpRight,
+  ImageOff, Layers,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -502,6 +503,102 @@ export function Portfolio() {
                     </div>
                   </div>
                 ))}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Protocol exposure breakdown */}
+          {wallet.defiPositions.length > 0 && (() => {
+            const byProtocol: Record<string, number> = {};
+            for (const p of wallet.defiPositions) {
+              if (p.valueUsd != null) {
+                byProtocol[p.protocol] = (byProtocol[p.protocol] ?? 0) + p.valueUsd;
+              }
+            }
+            const entries = Object.entries(byProtocol)
+              .sort(([, a], [, b]) => b - a)
+              .slice(0, 8);
+            const max = entries[0]?.[1] ?? 1;
+            if (entries.length === 0) return null;
+            return (
+              <Card className="bg-card/50 border-border/40">
+                <CardHeader className="pb-2 border-b border-border/20">
+                  <CardTitle className="text-sm font-mono flex items-center gap-2">
+                    <Layers className="h-4 w-4 text-primary" />PROTOCOL EXPOSURE
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-4 space-y-2.5">
+                  {entries.map(([protocol, value]) => (
+                    <div key={protocol} className="space-y-1">
+                      <div className="flex items-center justify-between text-xs font-mono">
+                        <span className="font-bold">{protocol}</span>
+                        <span className="text-muted-foreground">{fmtUsd(value)}</span>
+                      </div>
+                      <div className="h-1.5 rounded-full bg-muted/20 overflow-hidden">
+                        <div
+                          className="h-full bg-primary/70 rounded-full transition-all duration-500"
+                          style={{ width: `${(value / max) * 100}%` }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            );
+          })()}
+
+          {/* NFT gallery */}
+          {wallet.nfts.length > 0 && (
+            <Card className="bg-card/50 border-border/40">
+              <CardHeader className="pb-2 border-b border-border/20">
+                <CardTitle className="text-sm font-mono flex items-center gap-2">
+                  <ImageOff className="h-4 w-4 text-primary" />NFT HOLDINGS
+                  <Badge variant="outline" className="ml-auto font-mono text-xs">{wallet.nfts.length}</Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-4">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                  {wallet.nfts.slice(0, 20).map((nft, i) => (
+                    <div
+                      key={i}
+                      className="group rounded-xl overflow-hidden border border-border/30 bg-card/30 hover:border-primary/30 transition-colors"
+                    >
+                      <div className="aspect-square bg-muted/20 relative overflow-hidden">
+                        {nft.image ? (
+                          <img
+                            src={nft.image}
+                            alt={nft.name || `NFT ${nft.tokenId}`}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            loading="lazy"
+                            onError={(e) => {
+                              (e.currentTarget as HTMLImageElement).style.display = "none";
+                              (e.currentTarget.nextSibling as HTMLElement | null)?.classList.remove("hidden");
+                            }}
+                          />
+                        ) : null}
+                        <div className={cn("w-full h-full flex items-center justify-center", nft.image ? "hidden" : "")}>
+                          <ImageOff className="h-6 w-6 text-muted-foreground/20" />
+                        </div>
+                      </div>
+                      <div className="p-2">
+                        <p className="text-[10px] font-mono font-bold truncate text-foreground/80">
+                          {nft.name || `#${nft.tokenId}`}
+                        </p>
+                        <p className="text-[9px] font-mono text-muted-foreground/50 truncate">{nft.collection}</p>
+                        {nft.floorPriceUsd != null && (
+                          <p className="text-[9px] font-mono text-muted-foreground/60 mt-0.5">
+                            Floor {fmtUsd(nft.floorPriceUsd)}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {wallet.nfts.length > 20 && (
+                  <p className="text-xs font-mono text-muted-foreground/40 text-center mt-4">
+                    +{wallet.nfts.length - 20} more NFTs not shown
+                  </p>
+                )}
               </CardContent>
             </Card>
           )}

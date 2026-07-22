@@ -1,1 +1,2 @@
 - [AlphaScout AI Stack](alphascout-stack.md) — core stack decisions, OpenRouter key prefix, wallet connect config, data layer architecture.
+- [AlphaScout Feature Set](alphascout-features.md) — all implemented pages, components, and lib modules as of July 2026.

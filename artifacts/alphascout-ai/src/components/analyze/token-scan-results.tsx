@@ -98,7 +98,7 @@ function SecuritySummary({ sec, sourceLabel }: { sec: TokenSecurity; sourceLabel
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-3">
-          <SecurityFlag label="Honeypot Detection" value={sec.isHoneypot === null ? null : !sec.isHoneypot} dangerous={sec.isHoneypot === true} />
+          <SecurityFlag label="Honeypot Detection" value={sec.isHoneypot} dangerous />
           <SecurityFlag label="Open Source / Verified" value={sec.isOpenSource} />
           <SecurityFlag label="Mintable" value={sec.isMintable} dangerous />
           <SecurityFlag label="Hidden Owner" value={sec.hasHiddenOwner} dangerous />

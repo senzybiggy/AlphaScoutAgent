@@ -24,6 +24,7 @@ import { TokenResearch } from "./pages/token-research";
 
 // Components
 import { Navbar } from "./components/layout/navbar";
+import { FloatingCopilot } from "./components/layout/floating-copilot";
 
 // Wallet — imports wallet-config as a side effect, which calls createAppKit()
 import { wagmiAdapter } from "./lib/wallet-config";
@@ -60,6 +61,7 @@ function Router() {
           <Route component={NotFound} />
         </Switch>
       </main>
+      <FloatingCopilot />
     </div>
   );
 }

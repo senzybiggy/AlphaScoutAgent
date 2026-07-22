@@ -61,7 +61,12 @@ function validateTarget(target: string): string | null {
   return "Enter a valid wallet address (0x…), Solana address, Bitcoin address, or project URL.";
 }
 
-async function quickScan(target: string, type: WatchlistItemType, chain: string | null): Promise<{ riskScore: number }> {
+interface ScanResult {
+  riskScore: number;
+  tokenScan?: { priceUsd: number | null; priceChange24h: number | null } | null;
+}
+
+async function quickScan(target: string, type: WatchlistItemType, chain: string | null): Promise<ScanResult> {
   const base = import.meta.env.BASE_URL?.replace(/\/$/, "") ?? "";
   const r = await fetch(`${base}/api/analyze`, {
     method: "POST",
@@ -72,7 +77,7 @@ async function quickScan(target: string, type: WatchlistItemType, chain: string 
     const body = await r.json().catch(() => ({})) as { error?: string };
     throw new Error(body.error ?? "Scan failed");
   }
-  return r.json();
+  return r.json() as Promise<ScanResult>;
 }
 
 function AddItemForm({ onAdd }: { onAdd: () => void }) {
@@ -189,6 +194,8 @@ export function Watchlist() {
       watchlistStore.update(item.id, {
         lastRiskScore: result.riskScore,
         lastScannedAt: new Date().toISOString(),
+        lastPriceUsd: result.tokenScan?.priceUsd ?? null,
+        lastPriceChange24h: result.tokenScan?.priceChange24h ?? null,
       });
       refresh();
       toast({
@@ -230,6 +237,8 @@ export function Watchlist() {
         watchlistStore.update(item.id, {
           lastRiskScore: result.riskScore,
           lastScannedAt: new Date().toISOString(),
+          lastPriceUsd: result.tokenScan?.priceUsd ?? null,
+          lastPriceChange24h: result.tokenScan?.priceChange24h ?? null,
         });
         refresh();
       } catch {
@@ -365,6 +374,18 @@ export function Watchlist() {
                             </Badge>
                           )}
                           {riskBadge(riskScore)}
+                          {item.type === "token" && item.lastPriceUsd != null && (
+                            <Badge variant="outline" className="text-xs font-mono border-border/30 text-muted-foreground">
+                              ${item.lastPriceUsd < 0.01
+                                ? item.lastPriceUsd.toExponential(2)
+                                : item.lastPriceUsd.toFixed(item.lastPriceUsd < 1 ? 4 : 2)}
+                              {item.lastPriceChange24h != null && (
+                                <span className={cn("ml-1", item.lastPriceChange24h >= 0 ? "text-success" : "text-destructive")}>
+                                  {item.lastPriceChange24h >= 0 ? "+" : ""}{item.lastPriceChange24h.toFixed(1)}%
+                                </span>
+                              )}
+                            </Badge>
+                          )}
                         </div>
                         <p className="text-[10px] font-mono text-muted-foreground/60 mt-0.5 truncate">{item.target}</p>
                         <p className="text-[10px] font-mono text-muted-foreground/40 mt-0.5">

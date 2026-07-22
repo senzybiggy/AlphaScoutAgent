@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { TerminalSquare, AlertCircle, Clock, ChevronRight } from "lucide-react";
 import { useAnalyzeTarget, type AnalyzeResult } from "@workspace/api-client-react";
 import { useAppKitAccount, useAppKitNetwork } from "@reown/appkit/react";
@@ -9,24 +9,51 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { DetectionResult } from "@/lib/detect-input-type";
 import type { RichAnalyzeResult } from "@/lib/scan-types";
+import { cn } from "@/lib/utils";
 import { Link } from "wouter";
 
-const SCAN_STAGES = [
-  "Connecting to blockchain nodes...",
-  "Fetching on-chain data...",
-  "Running security analysis...",
-  "Generating AI intelligence report...",
-  "Compiling results...",
+const SCAN_STAGES: { label: string; pct: number }[] = [
+  { label: "Connecting to blockchain nodes...", pct: 8 },
+  { label: "Fetching on-chain data...", pct: 25 },
+  { label: "Running security analysis...", pct: 48 },
+  { label: "Querying price & liquidity providers...", pct: 65 },
+  { label: "Generating AI intelligence report...", pct: 82 },
+  { label: "Compiling results...", pct: 95 },
 ];
 
 function ScanProgress() {
-  const [stage] = useState(() => Math.floor(Math.random() * SCAN_STAGES.length));
+  const [idx, setIdx] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setIdx((i) => Math.min(i + 1, SCAN_STAGES.length - 1)), 1900);
+    return () => clearInterval(t);
+  }, []);
+  const stage = SCAN_STAGES[idx]!;
   return (
     <div className="space-y-6 animate-in fade-in">
-      {/* Status bar */}
-      <div className="flex items-center gap-3 p-3 rounded-lg border border-primary/20 bg-primary/5 font-mono text-sm">
-        <span className="h-2 w-2 rounded-full bg-primary animate-pulse flex-shrink-0" />
-        <span className="text-primary">{SCAN_STAGES[stage]}</span>
+      {/* Status bar + progress */}
+      <div className="space-y-2">
+        <div className="flex items-center gap-3 p-3 rounded-lg border border-primary/20 bg-primary/5 font-mono text-sm">
+          <span className="h-2 w-2 rounded-full bg-primary animate-pulse flex-shrink-0" />
+          <span className="text-primary flex-1">{stage.label}</span>
+          <span className="text-primary/50 text-xs tabular-nums">{stage.pct}%</span>
+        </div>
+        <div className="w-full h-1.5 rounded-full bg-muted/20 overflow-hidden">
+          <div
+            className="h-full bg-primary rounded-full transition-all duration-[1800ms] ease-out"
+            style={{ width: `${stage.pct}%` }}
+          />
+        </div>
+        <div className="flex justify-between px-0.5">
+          {SCAN_STAGES.map((s, i) => (
+            <div
+              key={i}
+              className={cn(
+                "h-1 w-1 rounded-full transition-colors duration-300",
+                i <= idx ? "bg-primary" : "bg-muted/30",
+              )}
+            />
+          ))}
+        </div>
       </div>
       {/* Skeleton cards */}
       <div className="flex flex-col md:flex-row gap-6">

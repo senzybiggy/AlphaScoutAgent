@@ -11,6 +11,9 @@ export interface WatchlistItem {
   addedAt: string;
   lastRiskScore: number | null;
   lastScannedAt: string | null;
+  // Token-specific live data
+  lastPriceUsd?: number | null;
+  lastPriceChange24h?: number | null;
 }
 
 const KEY = "alphascout:watchlist";

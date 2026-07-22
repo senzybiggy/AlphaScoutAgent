@@ -1,5 +1,7 @@
+import { useEffect } from "react";
 import type { AnalyzeResult } from "@workspace/api-client-react";
 import type { RichAnalyzeResult, ProviderAttempt } from "@/lib/scan-types";
+import { scanContextStore } from "@/lib/scan-context-store";
 import { RiskGauge } from "./risk-gauge";
 import { WalletScanResults } from "./wallet-scan-results";
 import { TokenScanResults } from "./token-scan-results";
@@ -175,6 +177,19 @@ function DataUnavailableBanner({
 export function AnalysisResults({ result, readOnly = false }: AnalysisResultsProps) {
   const rich = result as unknown as RichAnalyzeResult;
   const insightsLabel = INSIGHTS_LABEL[result.type] ?? "AI INSIGHTS & VULNERABILITIES";
+
+  // Keep the floating copilot in sync with whatever scan is currently on screen
+  useEffect(() => {
+    if (!readOnly) {
+      scanContextStore.set({
+        context: buildCopilotContext(rich),
+        target: rich.target,
+        type: rich.type,
+        timestamp: Date.now(),
+      });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rich.target, rich.analyzedAt, readOnly]);
 
   const hasSections = Array.isArray((result as unknown as Record<string, unknown>).sections) &&
     ((result as unknown as { sections: unknown[] }).sections).length > 0;
